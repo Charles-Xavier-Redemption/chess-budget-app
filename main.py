@@ -1,173 +1,225 @@
 from flask import Flask, render_template, request, redirect
-import json, os
-from datetime import datetime
-from uuid import uuid4
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import os
 
-SHEET_ID = "1V0IWGxy_NyTHZwZv0i2xf6bSi-25bSkH5bdKlbzaMYU"
+# Google Sheet ID (use your actual sheet ID)
+SHEET_ID = "1V0IWGxy_NyTHZwZv0i2xf6bSi-25bSkH5bdKlbzaMYU"  # Change to your sheet ID
 
-def get_gsheet():
-    scope = [
-        "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(SHEET_ID).worksheet("Data")
-    return sheet
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
 
-DATA_FILE = "data.json"
+# --- Helper to get each worksheet ---
+def get_gsheet_tab(tab_name):
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive",
+    ]
+    creds = ServiceAccountCredentials.from_json_keyfile_name('/etc/secrets/creds.json', scope)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(SHEET_ID)
+    return sheet.worksheet(tab_name)
 
+# --- Load ALL data from Google Sheets ---
 def load_data():
-    default_data = {
-        "balances": {"Chris": 0.0, "Angela": 0.0},
-        "recurring": [],
-        "one_time": [],
-        "paychecks": [],
-        "forecasts": []
-    }
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            existing = json.load(f)
-            for key in default_data:
-                if key not in existing:
-                    existing[key] = default_data[key]
-            for expense in existing["recurring"]:
-                if "active" not in expense:
-                    expense["active"] = True
-            return existing
-    else:
-        return default_data
+    # BALANCES
+    balances_ws = get_gsheet_tab('Balances')
+    balances_data = balances_ws.get_all_records()
+    balances = {row['Name']: float(row['Amount']) for row in balances_data}
 
-data = load_data()
+    # RECURRING
+    recurring_ws = get_gsheet_tab('Recurring')
+    recurring_data = recurring_ws.get_all_records()
+    recurring = [
+        {
+            "name": row["Name"],
+            "amount": float(row["Amount"]),
+            "account": row["Account"],
+            "day": int(row["Day"]),
+            "active": str(row["Active"]).upper() == "TRUE"
+        }
+        for row in recurring_data
+    ]
+
+    # ONETIME
+    onetime_ws = get_gsheet_tab('Onetime')
+    onetime_data = onetime_ws.get_all_records()
+    one_time = [
+        {
+            "name": row["Name"],
+            "amount": float(row["Amount"]),
+            "account": row["Account"],
+            "date": row["Date"]
+        }
+        for row in onetime_data
+    ]
+
+    # PAYCHECKS
+    paychecks_ws = get_gsheet_tab('Paychecks')
+    paychecks_data = paychecks_ws.get_all_records()
+    paychecks = [
+        {
+            "amount": float(row["Amount"]),
+            "date": row["Date"]
+        }
+        for row in paychecks_data
+    ]
+
+    # FORECASTS
+    forecasts_ws = get_gsheet_tab('Forecasts')
+    forecasts_data = forecasts_ws.get_all_records()
+    forecasts = [
+        {
+            "date": row["Date"],
+            "incoming": float(row["Incoming"]),
+            "expenses": float(row["Expenses"]),
+            "projected": float(row["Projected"])
+        }
+        for row in forecasts_data
+    ]
+
+    return {
+        "balances": balances,
+        "recurring": recurring,
+        "one_time": one_time,
+        "paychecks": paychecks,
+        "forecasts": forecasts
+    }
+
+# --- Save ALL data to Google Sheets ---
+def save_data(data):
+    # BALANCES
+    balances_ws = get_gsheet_tab('Balances')
+    balances_list = [[k, v] for k, v in data["balances"].items()]
+    balances_ws.clear()
+    balances_ws.append_row(['Name', 'Amount'])
+    for row in balances_list:
+        balances_ws.append_row(row)
+
+    # RECURRING
+    recurring_ws = get_gsheet_tab('Recurring')
+    recurring_ws.clear()
+    recurring_ws.append_row(['Name', 'Amount', 'Account', 'Day', 'Active'])
+    for item in data["recurring"]:
+        recurring_ws.append_row([
+            item["name"], item["amount"], item["account"], item["day"], str(item["active"])
+        ])
+
+    # ONETIME
+    onetime_ws = get_gsheet_tab('Onetime')
+    onetime_ws.clear()
+    onetime_ws.append_row(['Name', 'Amount', 'Account', 'Date'])
+    for item in data["one_time"]:
+        onetime_ws.append_row([
+            item["name"], item["amount"], item["account"], item["date"]
+        ])
+
+    # PAYCHECKS
+    paychecks_ws = get_gsheet_tab('Paychecks')
+    paychecks_ws.clear()
+    paychecks_ws.append_row(['Amount', 'Date'])
+    for item in data["paychecks"]:
+        paychecks_ws.append_row([
+            item["amount"], item["date"]
+        ])
+
+    # FORECASTS
+    forecasts_ws = get_gsheet_tab('Forecasts')
+    forecasts_ws.clear()
+    forecasts_ws.append_row(['Date', 'Incoming', 'Expenses', 'Projected'])
+    for item in data["forecasts"]:
+        forecasts_ws.append_row([
+            item["date"], item["incoming"], item["expenses"], item["projected"]
+        ])
+
+# --- Flask Routes (basic version, you can expand with more features) ---
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    global data
+    data = load_data()
+
     if request.method == "POST":
-        form_type = request.form.get("form_type")
+        # Checking balance update
+        if request.form.get("form_type") == "update_balances":
+            data["balances"]["Chris"] = float(request.form.get("chris_balance", 0))
+            data["balances"]["Angela"] = float(request.form.get("angela_balance", 0))
+            save_data(data)
+            return redirect("/")
 
-        if form_type == "update_balances":
-            data["balances"]["Chris"] = float(request.form["chris_balance"])
-            data["balances"]["Angela"] = float(request.form["angela_balance"])
-
-        elif form_type == "add_expense":
-            expense = {
-                "id": str(uuid4()),
+        # Add recurring expense
+        elif request.form.get("form_type") == "add_expense":
+            new_exp = {
                 "name": request.form["name"],
                 "amount": float(request.form["amount"]),
                 "account": request.form["account"],
                 "day": int(request.form["day"]),
                 "active": "active" in request.form
             }
-            data["recurring"].append(expense)
+            data["recurring"].append(new_exp)
+            save_data(data)
+            return redirect("/")
 
-        elif form_type == "delete_expense":
-            expense_id = request.form["expense_id"]
-            data["recurring"] = [e for e in data["recurring"] if e["id"] != expense_id]
-
-        elif form_type == "toggle_expense":
-            expense_id = request.form["expense_id"]
-            for e in data["recurring"]:
-                if e["id"] == expense_id:
-                    e["active"] = not e.get("active", True)
-
-        elif form_type == "add_one_time":
-            one_time = {
-                "id": str(uuid4()),
+        # Add one-time expense
+        elif request.form.get("form_type") == "add_onetime":
+            new_exp = {
                 "name": request.form["name"],
                 "amount": float(request.form["amount"]),
-                "date": request.form["date"],
-                "account": request.form["account"]
+                "account": request.form["account"],
+                "date": request.form["date"]
             }
-            data["one_time"].append(one_time)
+            data["one_time"].append(new_exp)
+            save_data(data)
+            return redirect("/")
 
-        elif form_type == "delete_one_time":
-            one_time_id = request.form["one_time_id"]
-            data["one_time"] = [e for e in data["one_time"] if e["id"] != one_time_id]
-
-        elif form_type == "add_paycheck":
-            paycheck = {
-                "id": str(uuid4()),
-                "amount": float(request.form["pay_amount"]),
-                "date": request.form["pay_date"]
+        # Add paycheck
+        elif request.form.get("form_type") == "add_paycheck":
+            new_pay = {
+                "amount": float(request.form["amount"]),
+                "date": request.form["date"]
             }
-            data["paychecks"].append(paycheck)
+            data["paychecks"].append(new_pay)
+            save_data(data)
+            return redirect("/")
 
-        elif form_type == "delete_paycheck":
-            paycheck_id = request.form["paycheck_id"]
-            data["paychecks"] = [p for p in data["paychecks"] if p["id"] != paycheck_id]
+        # Forecast
+        elif request.form.get("form_type") == "forecast":
+            forecast_date = request.form["forecast_date"]
+            # Add your forecast logic here, example placeholder:
+            incoming = sum(p["amount"] for p in data["paychecks"] if p["date"] <= forecast_date)
+            recurring_exp = sum(e["amount"] for e in data["recurring"] if e["active"])
+            onetime_exp = sum(e["amount"] for e in data["one_time"] if e["date"] <= forecast_date)
+            total_exp = recurring_exp + onetime_exp
+            combined_balance = sum(data["balances"].values())
+            projected = combined_balance + incoming - total_exp
+            data["forecasts"].append({
+                "date": forecast_date,
+                "incoming": incoming,
+                "expenses": total_exp,
+                "projected": projected
+            })
+            save_data(data)
+            return redirect("/")
 
-        elif form_type == "clear_forecasts":
-            data["forecasts"].clear()
+        # Clear forecast history
+        elif request.form.get("form_type") == "clear_forecast":
+            data["forecasts"] = []
+            save_data(data)
+            return redirect("/")
 
-        save_data()
-        return redirect("/")
-
+    # Calculate combined balance for display
     combined_balance = sum(data["balances"].values())
-    return render_template("index.html",
-                           data=data,
-                           combined_balance=combined_balance)
 
-@app.route("/forecast", methods=["POST"])
-def forecast():
-    global data
-    target_date_str = request.form["forecast_date"]
-    target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
-    today = datetime.today().date()
-
-    upcoming_expenses = 0
-    for e in data["recurring"]:
-        if not e.get("active", True):
-            continue
-        expense_day = e["day"]
-        expense_date = datetime(today.year, today.month, expense_day).date()
-        while expense_date <= target_date:
-            if expense_date >= today:
-                upcoming_expenses += e["amount"]
-            if expense_date.month == 12:
-                expense_date = datetime(expense_date.year + 1, 1, expense_day).date()
-            else:
-                expense_date = datetime(expense_date.year, expense_date.month + 1, expense_day).date()
-
-    upcoming_one_time = sum(
-        e["amount"] for e in data["one_time"]
-        if datetime.strptime(e["date"], "%Y-%m-%d").date() <= target_date
+    return render_template(
+        "index.html",
+        chris_balance=data["balances"].get("Chris", 0.0),
+        angela_balance=data["balances"].get("Angela", 0.0),
+        combined_balance=combined_balance,
+        recurring=data["recurring"],
+        one_time=data["one_time"],
+        paychecks=data["paychecks"],
+        forecasts=data["forecasts"]
     )
 
-    incoming = sum(p["amount"] for p in data["paychecks"]
-                   if datetime.strptime(p["date"], "%Y-%m-%d").date() <= target_date)
-
-    combined_balance = sum(data["balances"].values())
-    projected_balance = combined_balance + incoming - (upcoming_expenses + upcoming_one_time)
-
-    forecast_result = {
-        "date": target_date_str,
-        "incoming": incoming,
-        "expenses": upcoming_expenses + upcoming_one_time,
-        "projected": projected_balance
-    }
-    data["forecasts"].append(forecast_result)
-    save_data()
-
-    return redirect("/")
-
-def save_data():
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-@app.route("/test-gsheet")
-def test_gsheet():
-    try:
-        sheet = get_gsheet()
-        sheet.update('A1', [['Hello from Flask!']])  # <-- updated line
-        value = sheet.acell('A1').value
-        return f"Success! Cell A1 now has: {value}"
-    except Exception as e:
-        return f"Error: {e}"
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
