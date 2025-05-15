@@ -162,7 +162,7 @@ def save_data():
 def test_gsheet():
     try:
         sheet = get_gsheet()
-        sheet.update('A1', 'Hello from Flask!')
+        sheet.update('A1', [['Hello from Flask!']])  # <-- updated line
         value = sheet.acell('A1').value
         return f"Success! Cell A1 now has: {value}"
     except Exception as e:
