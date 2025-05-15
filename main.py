@@ -2,7 +2,20 @@ from flask import Flask, render_template, request, redirect
 import json, os
 from datetime import datetime
 from uuid import uuid4
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
+SHEET_ID = "1V0IWGxy_NyTHZwZv0i2xf6bSi-25bSkH5bdKlbzaMYU"
+
+def get_gsheet():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(SHEET_ID).worksheet("Data")
+    return sheet
 app = Flask(__name__)
 app.secret_key = "your-secret-key"
 
@@ -145,7 +158,15 @@ def forecast():
 def save_data():
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
-
+@app.route("/test-gsheet")
+def test_gsheet():
+    try:
+        sheet = get_gsheet()
+        sheet.update('A1', 'Hello from Flask!')
+        value = sheet.acell('A1').value
+        return f"Success! Cell A1 now has: {value}"
+    except Exception as e:
+        return f"Error: {e}"
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))
