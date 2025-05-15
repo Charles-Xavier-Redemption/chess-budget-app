@@ -1,126 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chess Budget Tracker</title>
+    <title>Family Budget Tracker</title>
     <link rel="stylesheet" href="/static/style.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-<div class="board">
-    <div class="forecast-display">
-        {% if data.forecasts %}
-            <h3>Latest Forecast ({{ data.forecasts[-1].date }})</h3>
-            <strong>${{ data.forecasts[-1].projected }}</strong>
-        {% else %}
-            <h3>No Forecast Yet</h3>
-        {% endif %}
-    </div>
-
-    <div class="section white-square">
-        <h2>Checking Balances ♔♕</h2>
+    <h1>Family Budget Tracker</h1>
+    <div>
         <form method="post">
             <input type="hidden" name="form_type" value="update_balances">
-            Chris: <input type="number" step="0.01" name="chris_balance" value="{{ data.balances.Chris }}">
-            Angela: <input type="number" step="0.01" name="angela_balance" value="{{ data.balances.Angela }}">
-            <button type="submit">Update ♖</button>
+            <label>Chris Checking: <input type="number" step="0.01" name="chris_balance" value="{{ chris_balance }}"></label><br>
+            <label>Angela Checking: <input type="number" step="0.01" name="angela_balance" value="{{ angela_balance }}"></label><br>
+            <strong>Combined Balance: ${{ combined_balance }}</strong><br>
+            <button type="submit">Update Balances</button>
         </form>
-        <strong>Total: ${{ combined_balance }}</strong>
     </div>
+    <hr>
 
-    <div class="section black-square">
-        <h2>Expenses ♜♞</h2>
+    <div>
+        <h2>Add Recurring Expense</h2>
         <form method="post">
             <input type="hidden" name="form_type" value="add_expense">
-            <input placeholder="Name" name="name" required>
-            <input placeholder="Amount" name="amount" type="number" step="0.01" required>
-            <select name="account">
-                <option>Chris</option>
-                <option>Angela</option>
-                <option>Chase</option>
-            </select>
-            <input placeholder="Day (1-31)" name="day" type="number" min="1" max="31" required>
-            Active: <input type="checkbox" name="active" checked>
-            <button type="submit">Add Recurring ♘</button>
+            <label>Name: <input type="text" name="name" required></label>
+            <label>Amount: <input type="number" step="0.01" name="amount" required></label>
+            <label>Account:
+                <select name="account">
+                    <option value="Chris">Chris</option>
+                    <option value="Angela">Angela</option>
+                </select>
+            </label>
+            <label>Day: <input type="number" name="day" min="1" max="31" required></label>
+            <label>Active: <input type="checkbox" name="active" checked></label>
+            <button type="submit">Add Expense</button>
         </form>
-
-        {% for e in data.recurring %}
-            <div class="expense-item">
-                {{ e.name }}: ${{ e.amount }} ({{ e.account }}) Day {{ e.day }} - {{ 'Active' if e.active else 'Inactive' }}
-                <form method="post">
-                    <input type="hidden" name="form_type" value="toggle_expense">
-                    <input type="hidden" name="expense_id" value="{{ e.id }}">
-                    <button>♟️ Toggle</button>
-                </form>
-                <form method="post">
-                    <input type="hidden" name="form_type" value="delete_expense">
-                    <input type="hidden" name="expense_id" value="{{ e.id }}">
-                    <button>♙ Delete</button>
-                </form>
-            </div>
-        {% endfor %}
-
-        <form method="post">
-            <input type="hidden" name="form_type" value="add_one_time">
-            <input placeholder="One-Time Name" name="name" required>
-            <input placeholder="Amount" name="amount" type="number" step="0.01" required>
-            <input type="date" name="date" required>
-            <select name="account">
-                <option>Chris</option>
-                <option>Angela</option>
-                <option>Chase</option>
-            </select>
-            <button>Add One-Time ♗</button>
-        </form>
-
-        {% for e in data.one_time %}
-            <div class="expense-item">
-                {{ e.name }} - ${{ e.amount }} ({{ e.account }}) on {{ e.date }}
-                <form method="post">
-                    <input type="hidden" name="form_type" value="delete_one_time">
-                    <input type="hidden" name="one_time_id" value="{{ e.id }}">
-                    <button>♝ Delete</button>
-                </form>
-            </div>
-        {% endfor %}
     </div>
+    <hr>
 
-    <div class="section white-square">
-        <h2>Future Paychecks ♚♛</h2>
+    <div>
+        <h2>Recurring Expenses</h2>
+        <ul>
+        {% for e in recurring %}
+            <li>{{ e.name }}: ${{ e.amount }} from {{ e.account }} on day {{ e.day }} - {% if e.active %}Active{% else %}Inactive{% endif %}</li>
+        {% endfor %}
+        </ul>
+    </div>
+    <hr>
+
+    <div>
+        <h2>Add One-Time Expense</h2>
+        <form method="post">
+            <input type="hidden" name="form_type" value="add_onetime">
+            <label>Name: <input type="text" name="name" required></label>
+            <label>Amount: <input type="number" step="0.01" name="amount" required></label>
+            <label>Account:
+                <select name="account">
+                    <option value="Chris">Chris</option>
+                    <option value="Angela">Angela</option>
+                </select>
+            </label>
+            <label>Date: <input type="date" name="date" required></label>
+            <button type="submit">Add One-Time Expense</button>
+        </form>
+    </div>
+    <hr>
+
+    <div>
+        <h2>One-Time Expenses</h2>
+        <ul>
+        {% for e in one_time %}
+            <li>{{ e.name }}: ${{ e.amount }} from {{ e.account }} on {{ e.date }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+    <hr>
+
+    <div>
+        <h2>Add Paycheck</h2>
         <form method="post">
             <input type="hidden" name="form_type" value="add_paycheck">
-            <input placeholder="Amount" type="number" step="0.01" name="pay_amount" required>
-            <input type="date" name="pay_date" required>
-            <button>Add Paycheck ♕</button>
+            <label>Amount: <input type="number" step="0.01" name="amount" required></label>
+            <label>Date: <input type="date" name="date" required></label>
+            <button type="submit">Add Paycheck</button>
         </form>
-
-        {% for p in data.paychecks %}
-            <div class="expense-item">
-                ${{ p.amount }} on {{ p.date }}
-                <form method="post">
-                    <input type="hidden" name="form_type" value="delete_paycheck">
-                    <input type="hidden" name="paycheck_id" value="{{ p.id }}">
-                    <button>♛ Delete</button>
-                </form>
-            </div>
-        {% endfor %}
     </div>
+    <hr>
 
-    <div class="section black-square">
-        <h2>Forecast ♔♟️</h2>
-        <form method="post" action="/forecast">
-            <input type="date" name="forecast_date" required>
-            <button>Forecast Balance ♚</button>
-        </form>
-
-        <h3>History ♜</h3>
-        {% for f in data.forecasts %}
-            <div>{{f.date}}: ${{f.projected}}</div>
+    <div>
+        <h2>Upcoming Paychecks</h2>
+        <ul>
+        {% for p in paychecks %}
+            <li>${{ p.amount }} on {{ p.date }}</li>
         {% endfor %}
+        </ul>
+    </div>
+    <hr>
+
+    <div>
+        <h2>Forecast Future Balance</h2>
         <form method="post">
-            <input type="hidden" name="form_type" value="clear_forecasts">
-            <button>Clear History ♞</button>
+            <input type="hidden" name="form_type" value="forecast">
+            <label>Date: <input type="date" name="forecast_date" required></label>
+            <button type="submit">Run Forecast</button>
         </form>
     </div>
-</div>
+    <div>
+        <h2>Historic Forecasts</h2>
+        <form method="post" style="display:inline;">
+            <input type="hidden" name="form_type" value="clear_forecast">
+            <button type="submit">Clear Forecast History</button>
+        </form>
+        <ul>
+        {% for f in forecasts %}
+            <li><strong>{{ f.date }}</strong>: Incoming ${{ f.incoming }}, Expenses ${{ f.expenses }}, Projected ${{ f.projected }}</li>
+        {% endfor %}
+        </ul>
+    </div>
 </body>
 </html>
