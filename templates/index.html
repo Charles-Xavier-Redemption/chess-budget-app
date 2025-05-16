@@ -2,251 +2,235 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Budget App</title>
+    <title>{{ latest_forecast['projected'] | default('Family Budget Tracker') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Bootstrap 5 CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(120deg, #f2fcff 0%, #e4ecfa 100%);
-            min-height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #f0f3fa, #e6e9f0 100%);
+            margin: 0;
+            padding: 0;
         }
-        .forecast-bar {
-            background: linear-gradient(100deg, #92e1ff 0%, #59d2ff 100%);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18), 0 2px 4px rgba(0,0,0,.12);
-            border: 1.5px solid #c3e6fc;
-            border-radius: 1.75rem;
+        .main-container {
+            max-width: 500px;
+            margin: 40px auto;
+        }
+        .forecast-header {
+            background: linear-gradient(90deg, #9fd6ff, #1e90ff);
+            color: #fff;
+            border-radius: 20px;
+            padding: 24px 32px;
+            font-size: 2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(30,144,255,0.16);
+            text-align: center;
+            margin-bottom: 32px;
+            letter-spacing: 1px;
         }
         .card {
-            background: rgba(255,255,255,0.98);
-            border: 1.5px solid #e0eaff;
-            border-radius: 1.75rem;
-            box-shadow: 0 6px 24px 0 rgba(80, 110, 255, 0.08);
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(46,91,255,0.07), 0 6px 32px rgba(30,64,175,0.07);
+            padding: 28px 24px 18px 24px;
+            margin-bottom: 24px;
         }
-        .btn {
-            border-radius: 1.5rem !important;
+        h2 {
+            font-size: 1.25rem;
             font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: #2952a3;
         }
-        .btn-primary, .btn-success, .btn-danger {
-            box-shadow: 0 4px 24px 0 rgba(0, 119, 255, 0.14);
+        label {
+            font-size: 0.98rem;
         }
-        .form-control, select {
-            border-radius: 1.1rem;
-            box-shadow: 0 1px 3px 0 rgba(80, 110, 255, 0.08);
+        input, select, button {
+            border-radius: 8px;
+            border: 1px solid #e3e7f2;
+            padding: 10px 12px;
+            margin-right: 10px;
+            margin-bottom: 8px;
+            font-size: 1rem;
         }
-        .active-pill {
-            background: linear-gradient(90deg, #32e47b 40%, #23c54c 100%);
-            color: white;
-            font-size: .95em;
-            border-radius: 1.2rem;
-            padding: 0.1em 1em;
-            margin-left: 0.8em;
+        input:focus, select:focus {
+            outline: 2px solid #1e90ff;
+        }
+        .btn-blue {
+            background: linear-gradient(90deg, #57aaff, #1e90ff);
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+            box-shadow: 0 1px 6px rgba(30,144,255,0.10);
+        }
+        .btn-green {
+            background: linear-gradient(90deg, #4ee57b, #14c77d);
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-yellow {
+            background: linear-gradient(90deg, #ffe66d, #ffd700);
+            color: #444;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-red {
+            background: linear-gradient(90deg, #ff6a7a, #ff2345);
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-gray {
+            background: #ccc;
+            color: #555;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .expense-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 4px rgba(30,64,175,0.04);
+        }
+        .expense-label {
+            font-weight: bold;
+        }
+        .badge {
             display: inline-block;
-            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-left: 8px;
         }
-        .forecast-label {
-            color: #1e4c6d;
-            font-size: 1.1rem;
-        }
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #235687;
-            margin-bottom: 1rem;
+        .badge-active { background: #36d87a; color: #fff; }
+        .badge-inactive { background: #bbb; color: #fff; }
+        @media (max-width: 600px) {
+            .main-container { max-width: 99%; padding: 6px; }
+            .forecast-header { font-size: 1.2rem; padding: 10px; }
+            .card { padding: 10px 6px; }
         }
     </style>
 </head>
 <body>
-    <div class="container py-4">
+<div class="main-container">
 
-        <!-- Forecast Bar -->
+    <div class="forecast-header">
         {% if latest_forecast %}
-        <div class="forecast-bar shadow-lg p-4 mb-4 d-flex align-items-center justify-content-between flex-wrap">
-            <div>
-                <div style="font-size: 2.2rem; font-weight: 700; color: #222; letter-spacing: -1px;">
-                    Projected: ${{ "{:,.2f}".format(latest_forecast.projected) }}
-                </div>
-                <div class="forecast-label">
-                    as of {{ latest_forecast.date }}
-                </div>
-            </div>
-            <div class="text-end mt-3 mt-md-0">
-                <div style="color:#0575e6;">Incoming: <b>${{ "{:,.2f}".format(latest_forecast.incoming) }}</b></div>
-                <div style="color:#e60039;">Expenses: <b>${{ "{:,.2f}".format(latest_forecast.expenses) }}</b></div>
-            </div>
-        </div>
+            Projected Balance for {{ latest_forecast['date'] }}: ${{ latest_forecast['projected'] }}
+        {% else %}
+            Family Budget Tracker
         {% endif %}
-
-        <!-- Checking Balances -->
-        <div class="card shadow-lg p-4 mb-4">
-            <div class="section-title">Checking Balances</div>
-            <form method="POST" class="row g-3 align-items-end">
-                <input type="hidden" name="form_type" value="update_balances">
-                <div class="col-sm-6 mb-2">
-                    <label for="chris_balance" class="form-label">Chris Checking</label>
-                    <input type="number" step="0.01" class="form-control" name="chris_balance" value="{{ chris_balance }}">
-                </div>
-                <div class="col-sm-6 mb-2">
-                    <label for="angela_balance" class="form-label">Angela Checking</label>
-                    <input type="number" step="0.01" class="form-control" name="angela_balance" value="{{ angela_balance }}">
-                </div>
-                <div class="col-12 mt-1 mb-2">
-                    <b>Combined Balance: ${{ combined_balance }}</b>
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary btn-lg shadow">Update Balances</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Recurring Expenses -->
-        <div class="card shadow-lg p-4 mb-4">
-            <div class="section-title">Add Recurring Expense</div>
-            <form method="POST" class="row g-2 align-items-end mb-2 flex-wrap">
-                <input type="hidden" name="form_type" value="add_expense">
-                <div class="col-12 col-md-4">
-                    <input type="text" class="form-control" name="name" placeholder="Name" required>
-                </div>
-                <div class="col-6 col-md-2">
-                    <input type="number" step="0.01" class="form-control" name="amount" placeholder="Amount" required>
-                </div>
-                <div class="col-6 col-md-2">
-                    <select class="form-control" name="account">
-                        <option value="Chris">Chris</option>
-                        <option value="Angela">Angela</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-2">
-                    <input type="number" class="form-control" name="day" placeholder="Day" min="1" max="31" required>
-                </div>
-                <div class="col-6 col-md-1 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="active" id="activeSwitch" checked>
-                    <label class="form-check-label" for="activeSwitch">Active</label>
-                </div>
-                <div class="col-12 col-md-1">
-                    <button type="submit" class="btn btn-success w-100">Add</button>
-                </div>
-            </form>
-            <!-- List recurring expenses -->
-            {% for idx, item in recurring|enumerate %}
-            <div class="d-flex align-items-center justify-content-between flex-wrap p-2 mb-2" style="background: #f7fafc; border-radius: 1rem; box-shadow: 0 2px 10px 0 rgba(80,110,255,0.07);">
-                <div>
-                    <span style="font-weight:700;">{{ item.name }}:</span>
-                    ${{ "{:,.2f}".format(item.amount) }} from {{ item.account }} on day {{ item.day }}
-                    {% if item.active %}
-                    <span class="active-pill">Active</span>
-                    {% else %}
-                    <span class="badge bg-secondary ms-2" style="font-size:.97em;">Inactive</span>
-                    {% endif %}
-                </div>
-                <div>
-                    <form method="POST" style="display:inline;">
-                        <input type="hidden" name="form_type" value="toggle_expense">
-                        <input type="hidden" name="index" value="{{ idx }}">
-                        <button type="submit" class="btn btn-outline-secondary btn-sm me-1"
-                            {% if not item.active %}disabled{% endif %}>
-                            Deactivate
-                        </button>
-                    </form>
-                    <form method="POST" style="display:inline;">
-                        <input type="hidden" name="form_type" value="delete_expense">
-                        <input type="hidden" name="index" value="{{ idx }}">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- One-Time Expenses -->
-        <div class="card shadow-lg p-4 mb-4">
-            <div class="section-title">Add One-Time Expense</div>
-            <form method="POST" class="row g-2 align-items-end mb-2 flex-wrap">
-                <input type="hidden" name="form_type" value="add_onetime">
-                <div class="col-12 col-md-4">
-                    <input type="text" class="form-control" name="name" placeholder="Name" required>
-                </div>
-                <div class="col-6 col-md-2">
-                    <input type="number" step="0.01" class="form-control" name="amount" placeholder="Amount" required>
-                </div>
-                <div class="col-6 col-md-2">
-                    <select class="form-control" name="account">
-                        <option value="Chris">Chris</option>
-                        <option value="Angela">Angela</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-3">
-                    <input type="date" class="form-control" name="date" required>
-                </div>
-                <div class="col-12 col-md-1">
-                    <button type="submit" class="btn btn-warning w-100">Add</button>
-                </div>
-            </form>
-            <!-- List one-time expenses -->
-            {% for item in one_time %}
-            <div class="d-flex align-items-center justify-content-between flex-wrap p-2 mb-2" style="background: #f7fafc; border-radius: 1rem; box-shadow: 0 2px 10px 0 rgba(80,110,255,0.07);">
-                <div>
-                    <span style="font-weight:700;">{{ item.name }}:</span>
-                    ${{ "{:,.2f}".format(item.amount) }} from {{ item.account }} on {{ item.date }}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Paychecks -->
-        <div class="card shadow-lg p-4 mb-4">
-            <div class="section-title">Add Paycheck</div>
-            <form method="POST" class="row g-2 align-items-end mb-2 flex-wrap">
-                <input type="hidden" name="form_type" value="add_paycheck">
-                <div class="col-8 col-md-4">
-                    <input type="number" step="0.01" class="form-control" name="amount" placeholder="Amount" required>
-                </div>
-                <div class="col-8 col-md-4">
-                    <input type="date" class="form-control" name="date" required>
-                </div>
-                <div class="col-4 col-md-4">
-                    <button type="submit" class="btn btn-info w-100 text-white">Add Paycheck</button>
-                </div>
-            </form>
-            <!-- List paychecks -->
-            {% for item in paychecks %}
-            <div class="d-flex align-items-center justify-content-between flex-wrap p-2 mb-2" style="background: #f7fafc; border-radius: 1rem; box-shadow: 0 2px 10px 0 rgba(80,110,255,0.07);">
-                <div>
-                    <span style="font-weight:700;">${{ "{:,.2f}".format(item.amount) }}</span> on {{ item.date }}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Forecast Section -->
-        <div class="card shadow-lg p-4 mb-4">
-            <div class="section-title">Forecast Future Balance</div>
-            <form method="POST" class="row g-2 align-items-end mb-2 flex-wrap">
-                <input type="hidden" name="form_type" value="forecast">
-                <div class="col-12 col-md-8">
-                    <input type="date" class="form-control" name="forecast_date" required>
-                </div>
-                <div class="col-12 col-md-4">
-                    <button type="submit" class="btn btn-primary w-100">Run Forecast</button>
-                </div>
-            </form>
-            <!-- List forecasts -->
-            {% for item in forecasts %}
-            <div class="d-flex align-items-center justify-content-between flex-wrap p-2 mb-2" style="background: #f7fafc; border-radius: 1rem; box-shadow: 0 2px 10px 0 rgba(80,110,255,0.07);">
-                <div>
-                    <span style="font-weight:700;">{{ item.date }}:</span>
-                    Projected <b>${{ "{:,.2f}".format(item.projected) }}</b>
-                    (Incoming: ${{ "{:,.2f}".format(item.incoming) }}, Expenses: ${{ "{:,.2f}".format(item.expenses) }})
-                </div>
-            </div>
-            {% endfor %}
-            <form method="POST" class="mt-2">
-                <input type="hidden" name="form_type" value="clear_forecast">
-                <button type="submit" class="btn btn-outline-danger w-100">Clear Forecast History</button>
-            </form>
-        </div>
     </div>
-    <!-- Bootstrap JS (optional, for dropdowns) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <form method="post" class="card">
+        <h2>Checking Balances</h2>
+        <label>Chris Checking</label>
+        <input type="number" name="chris_balance" value="{{ chris_balance }}">
+        <label>Angela Checking</label>
+        <input type="number" name="angela_balance" value="{{ angela_balance }}">
+        <div><b>Combined Balance:</b> ${{ combined_balance }}</div>
+        <input type="hidden" name="form_type" value="update_balances">
+        <button class="btn-blue" type="submit">Update Balances</button>
+    </form>
+
+    <form method="post" class="card" autocomplete="off">
+        <h2>Add Recurring Expense</h2>
+        <input name="name" placeholder="Name" required>
+        <input name="amount" placeholder="Amount" type="number" step="0.01" required>
+        <select name="account">
+            <option value="Chris">Chris</option>
+            <option value="Angela">Angela</option>
+        </select>
+        <input name="day" placeholder="Day" type="number" min="1" max="31" required>
+        <label>
+            <input type="checkbox" name="active" checked> Active
+        </label>
+        <input type="hidden" name="form_type" value="add_expense">
+        <button class="btn-green" type="submit">Add</button>
+        {% for item in recurring %}
+            <div class="expense-item">
+                <span class="expense-label">
+                    <b>{{ item.name }}</b>: ${{ item.amount }} from {{ item.account }} on day {{ item.day }}
+                    <span class="badge {% if item.active %}badge-active{% else %}badge-inactive{% endif %}">
+                        {% if item.active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </span>
+                <span>
+                    {% if item.active %}
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="form_type" value="deactivate_recurring">
+                            <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                            <button class="btn-gray" type="submit">Deactivate</button>
+                        </form>
+                    {% else %}
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="form_type" value="activate_recurring">
+                            <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                            <button class="btn-green" type="submit">Activate</button>
+                        </form>
+                    {% endif %}
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="form_type" value="delete_recurring">
+                        <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                        <button class="btn-red" type="submit">Delete</button>
+                    </form>
+                </span>
+            </div>
+        {% endfor %}
+    </form>
+
+    <form method="post" class="card">
+        <h2>Add One-Time Expense</h2>
+        <input name="name" placeholder="Name" required>
+        <input name="amount" placeholder="Amount" type="number" step="0.01" required>
+        <select name="account">
+            <option value="Chris">Chris</option>
+            <option value="Angela">Angela</option>
+        </select>
+        <input name="date" placeholder="Date (YYYY-MM-DD)" required>
+        <input type="hidden" name="form_type" value="add_onetime">
+        <button class="btn-yellow" type="submit">Add</button>
+    </form>
+
+    <form method="post" class="card">
+        <h2>Add Paycheck</h2>
+        <input name="amount" placeholder="Amount" type="number" step="0.01" required>
+        <input name="date" placeholder="Date (YYYY-MM-DD)" required>
+        <input type="hidden" name="form_type" value="add_paycheck">
+        <button class="btn-blue" type="submit">Add Paycheck</button>
+    </form>
+
+    <form method="post" class="card">
+        <h2>Forecast Future Balance</h2>
+        <input name="forecast_date" placeholder="Date (YYYY-MM-DD)" required>
+        <input type="hidden" name="form_type" value="forecast">
+        <button class="btn-blue" type="submit">Run Forecast</button>
+    </form>
+
+    <form method="post" class="card">
+        <h2>Historic Forecasts</h2>
+        {% if forecasts %}
+            <ul>
+                {% for f in forecasts %}
+                    <li><b>{{ f.date }}</b> | Incoming: ${{ f.incoming }} | Expenses: ${{ f.expenses }} | Projected: ${{ f.projected }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No forecasts yet.</p>
+        {% endif %}
+        <input type="hidden" name="form_type" value="clear_forecast">
+        <button class="btn-red" type="submit">Clear Forecast History</button>
+    </form>
+</div>
 </body>
 </html>
