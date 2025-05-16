@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
 
 # ===== GOOGLE SHEETS SETUP =====
 SHEET_ID = "1V0IWGxy_NyTHZwZv0i2xf6bSi-25bSkH5bdKlbzaMYU"
@@ -84,7 +85,6 @@ def load_data():
         }
         for row in forecasts_data if row["Date"] != "" and row["Projected"] != ""
     ]
-
     return {
         "balances": balances,
         "recurring": recurring,
@@ -96,11 +96,10 @@ def load_data():
 def save_data(data):
     # BALANCES
     balances_ws = get_gsheet_tab('Balances')
-    balances_list = [[k, v] for k, v in data["balances"].items()]
     balances_ws.clear()
     balances_ws.append_row(['Name', 'Amount'])
-    for row in balances_list:
-        balances_ws.append_row(row)
+    for k, v in data["balances"].items():
+        balances_ws.append_row([k, v])
 
     # RECURRING
     recurring_ws = get_gsheet_tab('Recurring')
@@ -164,17 +163,23 @@ def require_pin(view):
 def index():
     data = load_data()
     combined_balance = sum(data["balances"].values())
+    # Get the latest forecast (by date)
+    latest_forecast = None
+    if data["forecasts"]:
+        latest_forecast = max(data["forecasts"], key=lambda f: f["date"])
 
     if request.method == "POST":
+        form_type = request.form.get("form_type")
+
         # Update Balances
-        if request.form.get("form_type") == "update_balances":
+        if form_type == "update_balances":
             data["balances"]["Chris"] = float(request.form.get("chris_balance", 0))
             data["balances"]["Angela"] = float(request.form.get("angela_balance", 0))
             save_data(data)
             return redirect("/")
 
         # Add Recurring Expense
-        elif request.form.get("form_type") == "add_expense":
+        elif form_type == "add_expense":
             new_exp = {
                 "name": request.form["name"],
                 "amount": float(request.form["amount"]),
@@ -186,8 +191,24 @@ def index():
             save_data(data)
             return redirect("/")
 
+        # Deactivate Recurring
+        elif form_type == "deactivate_recurring":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["recurring"]):
+                data["recurring"][idx]["active"] = False
+                save_data(data)
+            return redirect("/")
+
+        # Delete Recurring
+        elif form_type == "delete_recurring":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["recurring"]):
+                del data["recurring"][idx]
+                save_data(data)
+            return redirect("/")
+
         # Add One-Time Expense
-        elif request.form.get("form_type") == "add_onetime":
+        elif form_type == "add_onetime":
             new_exp = {
                 "name": request.form["name"],
                 "amount": float(request.form["amount"]),
@@ -199,7 +220,7 @@ def index():
             return redirect("/")
 
         # Add Paycheck
-        elif request.form.get("form_type") == "add_paycheck":
+        elif form_type == "add_paycheck":
             new_pay = {
                 "amount": float(request.form["amount"]),
                 "date": request.form["date"]
@@ -209,7 +230,7 @@ def index():
             return redirect("/")
 
         # Forecast
-        elif request.form.get("form_type") == "forecast":
+        elif form_type == "forecast":
             forecast_date = request.form["forecast_date"]
             incoming = sum(p["amount"] for p in data["paychecks"] if p["date"] <= forecast_date)
             recurring_exp = sum(e["amount"] for e in data["recurring"] if e["active"])
@@ -227,22 +248,8 @@ def index():
             return redirect("/")
 
         # Clear Forecasts
-        elif request.form.get("form_type") == "clear_forecast":
+        elif form_type == "clear_forecast":
             data["forecasts"] = []
-            save_data(data)
-            return redirect("/")
-
-        # Toggle Recurring Active/Inactive
-        elif request.form.get("form_type") == "toggle_recurring":
-            idx = int(request.form.get("recurring_index"))
-            data["recurring"][idx]["active"] = not data["recurring"][idx]["active"]
-            save_data(data)
-            return redirect("/")
-
-        # Delete Recurring Expense
-        elif request.form.get("form_type") == "delete_recurring":
-            idx = int(request.form.get("recurring_index"))
-            data["recurring"].pop(idx)
             save_data(data)
             return redirect("/")
 
@@ -254,7 +261,8 @@ def index():
         recurring=data["recurring"],
         one_time=data["one_time"],
         paychecks=data["paychecks"],
-        forecasts=data["forecasts"]
+        forecasts=data["forecasts"],
+        latest_forecast=latest_forecast
     )
 
 @app.route("/logout")
