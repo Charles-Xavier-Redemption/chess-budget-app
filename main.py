@@ -232,6 +232,20 @@ def index():
             save_data(data)
             return redirect("/")
 
+        # Toggle Recurring Active/Inactive
+        elif request.form.get("form_type") == "toggle_recurring":
+            idx = int(request.form.get("recurring_index"))
+            data["recurring"][idx]["active"] = not data["recurring"][idx]["active"]
+            save_data(data)
+            return redirect("/")
+
+        # Delete Recurring Expense
+        elif request.form.get("form_type") == "delete_recurring":
+            idx = int(request.form.get("recurring_index"))
+            data["recurring"].pop(idx)
+            save_data(data)
+            return redirect("/")
+
     return render_template(
         "index.html",
         chris_balance=data["balances"].get("Chris", 0.0),
