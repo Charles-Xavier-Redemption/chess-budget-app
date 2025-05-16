@@ -197,7 +197,8 @@
             <option value="Chris">Chris</option>
             <option value="Angela">Angela</option>
         </select>
-        <input name="date" placeholder="Date (YYYY-MM-DD)" required>
+        <!-- CHANGE BELOW: type="date" -->
+        <input name="date" type="date" required>
         <input type="hidden" name="form_type" value="add_onetime">
         <button class="btn-yellow" type="submit">Add</button>
     </form>
@@ -205,14 +206,16 @@
     <form method="post" class="card">
         <h2>Add Paycheck</h2>
         <input name="amount" placeholder="Amount" type="number" step="0.01" required>
-        <input name="date" placeholder="Date (YYYY-MM-DD)" required>
+        <!-- CHANGE BELOW: type="date" -->
+        <input name="date" type="date" required>
         <input type="hidden" name="form_type" value="add_paycheck">
         <button class="btn-blue" type="submit">Add Paycheck</button>
     </form>
 
     <form method="post" class="card">
         <h2>Forecast Future Balance</h2>
-        <input name="forecast_date" placeholder="Date (YYYY-MM-DD)" required>
+        <!-- CHANGE BELOW: type="date" -->
+        <input name="forecast_date" type="date" required>
         <input type="hidden" name="form_type" value="forecast">
         <button class="btn-blue" type="submit">Run Forecast</button>
     </form>
