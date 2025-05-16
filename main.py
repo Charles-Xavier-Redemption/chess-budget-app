@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, redirect, session
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
 
 # ===== GOOGLE SHEETS SETUP =====
 SHEET_ID = "1V0IWGxy_NyTHZwZv0i2xf6bSi-25bSkH5bdKlbzaMYU"
@@ -85,6 +84,7 @@ def load_data():
         }
         for row in forecasts_data if row["Date"] != "" and row["Projected"] != ""
     ]
+
     return {
         "balances": balances,
         "recurring": recurring,
@@ -163,10 +163,9 @@ def require_pin(view):
 def index():
     data = load_data()
     combined_balance = sum(data["balances"].values())
-    # Get the latest forecast (by date)
-    latest_forecast = None
-    if data["forecasts"]:
-        latest_forecast = max(data["forecasts"], key=lambda f: f["date"])
+
+    # Figure out latest forecast (if any)
+    latest_forecast = data["forecasts"][-1] if data["forecasts"] else None
 
     if request.method == "POST":
         form_type = request.form.get("form_type")
@@ -191,7 +190,15 @@ def index():
             save_data(data)
             return redirect("/")
 
-        # Deactivate Recurring
+        # Activate Recurring Expense
+        elif form_type == "activate_recurring":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["recurring"]):
+                data["recurring"][idx]["active"] = True
+                save_data(data)
+            return redirect("/")
+
+        # Deactivate Recurring Expense
         elif form_type == "deactivate_recurring":
             idx = int(request.form["idx"])
             if 0 <= idx < len(data["recurring"]):
@@ -199,7 +206,7 @@ def index():
                 save_data(data)
             return redirect("/")
 
-        # Delete Recurring
+        # Delete Recurring Expense
         elif form_type == "delete_recurring":
             idx = int(request.form["idx"])
             if 0 <= idx < len(data["recurring"]):
