@@ -141,7 +141,7 @@ def save_data(data):
 # ===== FLASK & PIN SETUP =====
 app = Flask(__name__)
 app.secret_key = "super-secret-key"  # CHANGE THIS TO SOMETHING RANDOM/SECRET
-PIN_CODE = "1234"  # CHANGE THIS TO YOUR 4-DIGIT PIN
+PIN_CODE = "1877"  # CHANGE THIS TO YOUR 4-DIGIT PIN
 
 def require_pin(view):
     def wrapped_view(*args, **kwargs):
