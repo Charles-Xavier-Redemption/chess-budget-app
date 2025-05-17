@@ -3,6 +3,7 @@ import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
+import calendar
 
 # ===== GOOGLE SHEETS SETUP =====
 SHEET_ID = "1V0IWGxy_NyTHZwZv0i2xf6bSi-25bSkH5bdKlbzaMYU"
@@ -62,13 +63,14 @@ def load_data():
         for row in onetime_data if row["Amount"] != "" and row["Date"] != ""
     ]
 
-    # PAYCHECKS
+    # PAYCHECKS (now with 'Active')
     paychecks_ws = get_gsheet_tab('Paychecks')
     paychecks_data = paychecks_ws.get_all_records()
     paychecks = [
         {
             "amount": float(row["Amount"]),
-            "date": row["Date"]
+            "date": row["Date"],
+            "active": str(row.get("Active", "TRUE")).upper() == "TRUE"  # Default active if not present
         }
         for row in paychecks_data if row["Amount"] != "" and row["Date"] != ""
     ]
@@ -123,10 +125,10 @@ def save_data(data):
     # PAYCHECKS
     paychecks_ws = get_gsheet_tab('Paychecks')
     paychecks_ws.clear()
-    paychecks_ws.append_row(['Amount', 'Date'])
+    paychecks_ws.append_row(['Amount', 'Date', 'Active'])  # MODIFIED: Added Active
     for item in data["paychecks"]:
         paychecks_ws.append_row([
-            item["amount"], item["date"]
+            item["amount"], item["date"], str(item.get("active", True))
         ])
 
     # FORECASTS
@@ -172,7 +174,12 @@ def get_next_occurrence(recurring_day, today):
             month = 1
         else:
             month += 1
-        return datetime(year, month, recurring_day)
+        # Try except to handle invalid days for the next month
+        try:
+            return datetime(year, month, recurring_day)
+        except ValueError:
+            last_day = calendar.monthrange(year, month)[1]
+            return datetime(year, month, last_day)
 
 @app.route("/", methods=["GET", "POST"])
 @require_pin
@@ -182,6 +189,24 @@ def index():
 
     # Figure out latest forecast (if any)
     latest_forecast = data["forecasts"][-1] if data["forecasts"] else None
+
+    today = datetime.today()
+    current_month = today.strftime('%Y-%m')
+
+    # ===== CALCULATE SUMMARY TOTALS FOR CURRENT MONTH (MAY/JUNE ETC) =====
+    # Recurring Expense Total for Current Month (only active)
+    month_recurring_total = sum(
+        float(item["amount"])
+        for item in data["recurring"]
+        if item["active"] and int(item["day"]) >= 1 and int(item["day"]) <= calendar.monthrange(today.year, today.month)[1]
+    )
+
+    # Paycheck Total for Current Month (only active)
+    month_paycheck_total = sum(
+        float(p["amount"])
+        for p in data["paychecks"]
+        if p["active"] and p["date"].startswith(current_month)
+    )
 
     if request.method == "POST":
         form_type = request.form.get("form_type")
@@ -242,24 +267,48 @@ def index():
             save_data(data)
             return redirect("/")
 
-        # Add Paycheck
+        # ==== PAYCHECK CRUD ====
         elif form_type == "add_paycheck":
             new_pay = {
                 "amount": float(request.form["amount"]),
-                "date": request.form["date"]
+                "date": request.form["date"],
+                "active": True
             }
             data["paychecks"].append(new_pay)
             save_data(data)
             return redirect("/")
 
+        elif form_type == "activate_paycheck":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["paychecks"]):
+                data["paychecks"][idx]["active"] = True
+                save_data(data)
+            return redirect("/")
+
+        elif form_type == "deactivate_paycheck":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["paychecks"]):
+                data["paychecks"][idx]["active"] = False
+                save_data(data)
+            return redirect("/")
+
+        elif form_type == "delete_paycheck":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["paychecks"]):
+                del data["paychecks"][idx]
+                save_data(data)
+            return redirect("/")
+
         # Forecast
         elif form_type == "forecast":
             forecast_date = request.form["forecast_date"]
-            today = datetime.today()
             forecast_end = datetime.strptime(forecast_date, "%Y-%m-%d")
             
-            # Incoming (sum of paychecks before or on forecast date)
-            incoming = sum(p["amount"] for p in data["paychecks"] if p["date"] <= forecast_date)
+            # Only active paychecks up to forecast date
+            incoming = sum(
+                p["amount"] for p in data["paychecks"]
+                if p["active"] and p["date"] <= forecast_date
+            )
             
             # One-time expenses (before or on forecast date)
             onetime_exp = sum(e["amount"] for e in data["one_time"] if e["date"] <= forecast_date)
@@ -272,10 +321,9 @@ def index():
                 day = int(exp["day"])
                 amount = float(exp["amount"])
                 # Start at next valid occurrence
-                next_date = get_next_occurrence(day, today)
+                next_date = get_next_occurrence(day, datetime.today())
                 while next_date <= forecast_end:
                     recurring_exp += amount
-                    # Advance to next month
                     year, month = next_date.year, next_date.month
                     if month == 12:
                         year += 1
@@ -285,9 +333,6 @@ def index():
                     try:
                         next_date = datetime(year, month, day)
                     except ValueError:
-                        # Handle months where the day doesn't exist (e.g., Feb 30)
-                        # Pick the last day of the month
-                        import calendar
                         last_day = calendar.monthrange(year, month)[1]
                         next_date = datetime(year, month, last_day)
             
@@ -318,7 +363,9 @@ def index():
         one_time=data["one_time"],
         paychecks=data["paychecks"],
         forecasts=data["forecasts"],
-        latest_forecast=latest_forecast
+        latest_forecast=latest_forecast,
+        month_recurring_total=month_recurring_total,  # NEW: pass to template
+        month_paycheck_total=month_paycheck_total     # NEW: pass to template
     )
 
 @app.route("/logout")
