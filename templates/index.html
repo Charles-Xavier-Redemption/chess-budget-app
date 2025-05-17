@@ -34,6 +34,12 @@
             padding: 28px 24px 18px 24px;
             margin-bottom: 24px;
         }
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
         h2 {
             font-size: 1.25rem;
             font-weight: 600;
@@ -43,6 +49,7 @@
         }
         label {
             font-size: 0.98rem;
+            margin-bottom: 0;
         }
         input, select, button {
             border-radius: 8px;
@@ -118,6 +125,7 @@
             .main-container { max-width: 99%; padding: 6px; }
             .forecast-header { font-size: 1.2rem; padding: 10px; }
             .card { padding: 10px 6px; }
+            .row { flex-direction: column; gap: 0; }
         }
     </style>
 </head>
@@ -132,17 +140,21 @@
         {% endif %}
     </div>
 
+    <!-- Checking Balances Card -->
     <form method="post" class="card">
         <h2>Checking Balances</h2>
-        <label>Chris Checking</label>
-        <input type="number" name="chris_balance" value="{{ chris_balance }}">
-        <label>Angela Checking</label>
-        <input type="number" name="angela_balance" value="{{ angela_balance }}">
+        <div class="row">
+            <label>Chris Checking</label>
+            <input type="number" name="chris_balance" value="{{ chris_balance }}">
+            <label>Angela Checking</label>
+            <input type="number" name="angela_balance" value="{{ angela_balance }}">
+        </div>
         <div><b>Combined Balance:</b> ${{ combined_balance }}</div>
         <input type="hidden" name="form_type" value="update_balances">
         <button class="btn-blue" type="submit">Update Balances</button>
     </form>
 
+    <!-- Add Recurring Expense Card -->
     <form method="post" class="card" autocomplete="off">
         <h2>Add Recurring Expense</h2>
         <input name="name" placeholder="Name" required>
@@ -157,6 +169,11 @@
         </label>
         <input type="hidden" name="form_type" value="add_expense">
         <button class="btn-green" type="submit">Add</button>
+    </form>
+
+    <!-- Recurring Expenses List Card -->
+    <div class="card">
+        <h2>Recurring Expenses</h2>
         {% for item in recurring %}
             <div class="expense-item">
                 <span class="expense-label">
@@ -187,7 +204,7 @@
                 </span>
             </div>
         {% endfor %}
-    </form>
+    </div>
 
     <form method="post" class="card">
         <h2>Add One-Time Expense</h2>
@@ -197,7 +214,6 @@
             <option value="Chris">Chris</option>
             <option value="Angela">Angela</option>
         </select>
-        <!-- CHANGE BELOW: type="date" -->
         <input name="date" type="date" required>
         <input type="hidden" name="form_type" value="add_onetime">
         <button class="btn-yellow" type="submit">Add</button>
@@ -206,7 +222,6 @@
     <form method="post" class="card">
         <h2>Add Paycheck</h2>
         <input name="amount" placeholder="Amount" type="number" step="0.01" required>
-        <!-- CHANGE BELOW: type="date" -->
         <input name="date" type="date" required>
         <input type="hidden" name="form_type" value="add_paycheck">
         <button class="btn-blue" type="submit">Add Paycheck</button>
@@ -214,7 +229,6 @@
 
     <form method="post" class="card">
         <h2>Forecast Future Balance</h2>
-        <!-- CHANGE BELOW: type="date" -->
         <input name="forecast_date" type="date" required>
         <input type="hidden" name="form_type" value="forecast">
         <button class="btn-blue" type="submit">Run Forecast</button>
