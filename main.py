@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session
 import os
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime, timedelta
 
 # ===== GOOGLE SHEETS SETUP =====
 SHEET_ID = "1V0IWGxy_NyTHZwZv0i2xf6bSi-25bSkH5bdKlbzaMYU"
@@ -158,6 +159,21 @@ def require_pin(view):
     wrapped_view.__name__ = view.__name__
     return wrapped_view
 
+def get_next_occurrence(recurring_day, today):
+    """Returns the next date when this recurring expense will occur."""
+    year, month = today.year, today.month
+    if today.day < recurring_day:
+        # This month, future day
+        return datetime(year, month, recurring_day)
+    else:
+        # Next month
+        if month == 12:
+            year += 1
+            month = 1
+        else:
+            month += 1
+        return datetime(year, month, recurring_day)
+
 @app.route("/", methods=["GET", "POST"])
 @require_pin
 def index():
@@ -239,9 +255,42 @@ def index():
         # Forecast
         elif form_type == "forecast":
             forecast_date = request.form["forecast_date"]
+            today = datetime.today()
+            forecast_end = datetime.strptime(forecast_date, "%Y-%m-%d")
+            
+            # Incoming (sum of paychecks before or on forecast date)
             incoming = sum(p["amount"] for p in data["paychecks"] if p["date"] <= forecast_date)
-            recurring_exp = sum(e["amount"] for e in data["recurring"] if e["active"])
+            
+            # One-time expenses (before or on forecast date)
             onetime_exp = sum(e["amount"] for e in data["one_time"] if e["date"] <= forecast_date)
+
+            # Recurring expenses: only for months and days after today
+            recurring_exp = 0.0
+            for exp in data["recurring"]:
+                if not exp["active"]:
+                    continue
+                day = int(exp["day"])
+                amount = float(exp["amount"])
+                # Start at next valid occurrence
+                next_date = get_next_occurrence(day, today)
+                while next_date <= forecast_end:
+                    recurring_exp += amount
+                    # Advance to next month
+                    year, month = next_date.year, next_date.month
+                    if month == 12:
+                        year += 1
+                        month = 1
+                    else:
+                        month += 1
+                    try:
+                        next_date = datetime(year, month, day)
+                    except ValueError:
+                        # Handle months where the day doesn't exist (e.g., Feb 30)
+                        # Pick the last day of the month
+                        import calendar
+                        last_day = calendar.monthrange(year, month)[1]
+                        next_date = datetime(year, month, last_day)
+            
             total_exp = recurring_exp + onetime_exp
             combined_balance = sum(data["balances"].values())
             projected = combined_balance + incoming - total_exp
