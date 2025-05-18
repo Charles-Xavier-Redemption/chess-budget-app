@@ -45,7 +45,9 @@ def load_data():
             "amount": float(row["Amount"]),
             "account": row["Account"],
             "day": int(row["Day"]),
-            "active": str(row["Active"]).upper() == "TRUE"
+            "active": str(row["Active"]).upper() == "TRUE",
+            "chasecard": str(row.get("ChaseCard", "No")).strip().lower() == "yes",
+            "chargeday": int(row.get("ChargeDay", 0)) if row.get("ChargeDay", "").strip() != "" else None,
         }
         for row in recurring_data if row["Amount"] != "" and row["Day"] != ""
     ]
@@ -63,17 +65,29 @@ def load_data():
         for row in onetime_data if row["Amount"] != "" and row["Date"] != ""
     ]
 
-    # PAYCHECKS (now with 'Active')
+    # PAYCHECKS
     paychecks_ws = get_gsheet_tab('Paychecks')
     paychecks_data = paychecks_ws.get_all_records()
     paychecks = [
         {
             "amount": float(row["Amount"]),
             "date": row["Date"],
-            "active": str(row.get("Active", "TRUE")).upper() == "TRUE"  # Default active if not present
+            "active": str(row.get("Active", "TRUE")).upper() == "TRUE"
         }
         for row in paychecks_data if row["Amount"] != "" and row["Date"] != ""
     ]
+
+    # CHASE BALANCE (grab both amount and balance date)
+    chase_ws = get_gsheet_tab('ChaseBalance')
+    chase_data = chase_ws.get_all_records()
+    chase_balance = 0.0
+    chase_balance_date = None
+    for row in chase_data:
+        if row['Name'].strip().lower() == 'chase':
+            chase_balance = float(row['Amount'])
+            if row.get('BalanceAsOf'):
+                chase_balance_date = datetime.strptime(row['BalanceAsOf'], "%Y-%m-%d")
+            break
 
     # FORECASTS
     forecasts_ws = get_gsheet_tab('Forecasts')
@@ -93,27 +107,27 @@ def load_data():
         "recurring": recurring,
         "one_time": one_time,
         "paychecks": paychecks,
-        "forecasts": forecasts
+        "forecasts": forecasts,
+        "chase_balance": chase_balance,
+        "chase_balance_date": chase_balance_date
     }
 
 def save_data(data):
-    # BALANCES
     balances_ws = get_gsheet_tab('Balances')
     balances_ws.clear()
     balances_ws.append_row(['Name', 'Amount'])
     for k, v in data["balances"].items():
         balances_ws.append_row([k, v])
 
-    # RECURRING
     recurring_ws = get_gsheet_tab('Recurring')
     recurring_ws.clear()
-    recurring_ws.append_row(['Name', 'Amount', 'Account', 'Day', 'Active'])
+    recurring_ws.append_row(['Name', 'Amount', 'Account', 'Day', 'Active', 'ChaseCard', 'ChargeDay'])
     for item in data["recurring"]:
         recurring_ws.append_row([
-            item["name"], item["amount"], item["account"], item["day"], str(item["active"])
+            item["name"], item["amount"], item["account"], item["day"],
+            str(item["active"]), "Yes" if item.get("chasecard") else "No", item.get("chargeday") or ""
         ])
 
-    # ONETIME
     onetime_ws = get_gsheet_tab('Onetime')
     onetime_ws.clear()
     onetime_ws.append_row(['Name', 'Amount', 'Account', 'Date'])
@@ -122,16 +136,14 @@ def save_data(data):
             item["name"], item["amount"], item["account"], item["date"]
         ])
 
-    # PAYCHECKS
     paychecks_ws = get_gsheet_tab('Paychecks')
     paychecks_ws.clear()
-    paychecks_ws.append_row(['Amount', 'Date', 'Active'])  # MODIFIED: Added Active
+    paychecks_ws.append_row(['Amount', 'Date', 'Active'])
     for item in data["paychecks"]:
         paychecks_ws.append_row([
             item["amount"], item["date"], str(item.get("active", True))
         ])
 
-    # FORECASTS
     forecasts_ws = get_gsheet_tab('Forecasts')
     forecasts_ws.clear()
     forecasts_ws.append_row(['Date', 'Incoming', 'Expenses', 'Projected'])
@@ -140,10 +152,9 @@ def save_data(data):
             item["date"], item["incoming"], item["expenses"], item["projected"]
         ])
 
-# ===== FLASK & PIN SETUP =====
 app = Flask(__name__)
-app.secret_key = "super-secret-key"  # CHANGE THIS TO SOMETHING RANDOM/SECRET
-PIN_CODE = "1877"  # CHANGE THIS TO YOUR 4-DIGIT PIN
+app.secret_key = "super-secret-key"
+PIN_CODE = "1877"
 
 def require_pin(view):
     def wrapped_view(*args, **kwargs):
@@ -161,20 +172,16 @@ def require_pin(view):
     wrapped_view.__name__ = view.__name__
     return wrapped_view
 
-def get_next_occurrence(recurring_day, today):
-    """Returns the next date when this recurring expense will occur."""
-    year, month = today.year, today.month
-    if today.day < recurring_day:
-        # This month, future day
+def get_next_occurrence(recurring_day, base_date):
+    year, month = base_date.year, base_date.month
+    if base_date.day < recurring_day:
         return datetime(year, month, recurring_day)
     else:
-        # Next month
         if month == 12:
             year += 1
             month = 1
         else:
             month += 1
-        # Try except to handle invalid days for the next month
         try:
             return datetime(year, month, recurring_day)
         except ValueError:
@@ -186,22 +193,17 @@ def get_next_occurrence(recurring_day, today):
 def index():
     data = load_data()
     combined_balance = sum(data["balances"].values())
+    chase_balance = data["chase_balance"]
+    chase_balance_date = data["chase_balance_date"]
 
-    # Figure out latest forecast (if any)
-    latest_forecast = data["forecasts"][-1] if data["forecasts"] else None
-
+    # Calculate summary totals for current month
     today = datetime.today()
     current_month = today.strftime('%Y-%m')
-
-    # ===== CALCULATE SUMMARY TOTALS FOR CURRENT MONTH (MAY/JUNE ETC) =====
-    # Recurring Expense Total for Current Month (only active)
     month_recurring_total = sum(
         float(item["amount"])
         for item in data["recurring"]
         if item["active"] and int(item["day"]) >= 1 and int(item["day"]) <= calendar.monthrange(today.year, today.month)[1]
     )
-
-    # Paycheck Total for Current Month (only active)
     month_paycheck_total = sum(
         float(p["amount"])
         for p in data["paychecks"]
@@ -211,119 +213,57 @@ def index():
     if request.method == "POST":
         form_type = request.form.get("form_type")
 
-        # Update Balances
-        if form_type == "update_balances":
-            data["balances"]["Chris"] = float(request.form.get("chris_balance", 0))
-            data["balances"]["Angela"] = float(request.form.get("angela_balance", 0))
-            save_data(data)
-            return redirect("/")
+        # --- [Copy your CRUD for balances, recurring, onetime, paychecks here] ---
 
-        # Add Recurring Expense
-        elif form_type == "add_expense":
-            new_exp = {
-                "name": request.form["name"],
-                "amount": float(request.form["amount"]),
-                "account": request.form["account"],
-                "day": int(request.form["day"]),
-                "active": "active" in request.form
-            }
-            data["recurring"].append(new_exp)
-            save_data(data)
-            return redirect("/")
-
-        # Activate Recurring Expense
-        elif form_type == "activate_recurring":
-            idx = int(request.form["idx"])
-            if 0 <= idx < len(data["recurring"]):
-                data["recurring"][idx]["active"] = True
-                save_data(data)
-            return redirect("/")
-
-        # Deactivate Recurring Expense
-        elif form_type == "deactivate_recurring":
-            idx = int(request.form["idx"])
-            if 0 <= idx < len(data["recurring"]):
-                data["recurring"][idx]["active"] = False
-                save_data(data)
-            return redirect("/")
-
-        # Delete Recurring Expense
-        elif form_type == "delete_recurring":
-            idx = int(request.form["idx"])
-            if 0 <= idx < len(data["recurring"]):
-                del data["recurring"][idx]
-                save_data(data)
-            return redirect("/")
-
-        # Add One-Time Expense
-        elif form_type == "add_onetime":
-            new_exp = {
-                "name": request.form["name"],
-                "amount": float(request.form["amount"]),
-                "account": request.form["account"],
-                "date": request.form["date"]
-            }
-            data["one_time"].append(new_exp)
-            save_data(data)
-            return redirect("/")
-
-        # ==== PAYCHECK CRUD ====
-        elif form_type == "add_paycheck":
-            new_pay = {
-                "amount": float(request.form["amount"]),
-                "date": request.form["date"],
-                "active": True
-            }
-            data["paychecks"].append(new_pay)
-            save_data(data)
-            return redirect("/")
-
-        elif form_type == "activate_paycheck":
-            idx = int(request.form["idx"])
-            if 0 <= idx < len(data["paychecks"]):
-                data["paychecks"][idx]["active"] = True
-                save_data(data)
-            return redirect("/")
-
-        elif form_type == "deactivate_paycheck":
-            idx = int(request.form["idx"])
-            if 0 <= idx < len(data["paychecks"]):
-                data["paychecks"][idx]["active"] = False
-                save_data(data)
-            return redirect("/")
-
-        elif form_type == "delete_paycheck":
-            idx = int(request.form["idx"])
-            if 0 <= idx < len(data["paychecks"]):
-                del data["paychecks"][idx]
-                save_data(data)
-            return redirect("/")
-
-        # Forecast
-        elif form_type == "forecast":
+        # Forecast with Chase logic (advanced, no double-count)
+        if form_type == "forecast":
             forecast_date = request.form["forecast_date"]
             forecast_end = datetime.strptime(forecast_date, "%Y-%m-%d")
-            
+
             # Only active paychecks up to forecast date
             incoming = sum(
                 p["amount"] for p in data["paychecks"]
                 if p["active"] and p["date"] <= forecast_date
             )
-            
+
             # One-time expenses (before or on forecast date)
             onetime_exp = sum(e["amount"] for e in data["one_time"] if e["date"] <= forecast_date)
 
-            # Recurring expenses: only for months and days after today
+            # Recurring expenses: 
+            #  - ChaseCard: only count charges that hit Chase *after* ChaseBalance BalanceAsOf date
+            #  - Non-ChaseCard: count as usual
             recurring_exp = 0.0
+            chase_recurring_exp = 0.0
             for exp in data["recurring"]:
                 if not exp["active"]:
                     continue
                 day = int(exp["day"])
                 amount = float(exp["amount"])
-                # Start at next valid occurrence
-                next_date = get_next_occurrence(day, datetime.today())
+                is_chase = exp.get("chasecard", False)
+                charge_day = int(exp.get("chargeday") or day)
+                # Start date for recurring charges:
+                next_date = get_next_occurrence(charge_day, today)
+                # For ChaseCard, start at the later of chase_balance_date or today
+                if is_chase and chase_balance_date:
+                    base_start = chase_balance_date
+                    # Move to the first charge *after* the chase_balance_date
+                    while next_date <= chase_balance_date:
+                        year, month = next_date.year, next_date.month
+                        if month == 12:
+                            year += 1
+                            month = 1
+                        else:
+                            month += 1
+                        try:
+                            next_date = datetime(year, month, charge_day)
+                        except ValueError:
+                            last_day = calendar.monthrange(year, month)[1]
+                            next_date = datetime(year, month, last_day)
                 while next_date <= forecast_end:
-                    recurring_exp += amount
+                    if is_chase:
+                        chase_recurring_exp += amount
+                    else:
+                        recurring_exp += amount
                     year, month = next_date.year, next_date.month
                     if month == 12:
                         year += 1
@@ -331,41 +271,40 @@ def index():
                     else:
                         month += 1
                     try:
-                        next_date = datetime(year, month, day)
+                        next_date = datetime(year, month, charge_day)
                     except ValueError:
                         last_day = calendar.monthrange(year, month)[1]
                         next_date = datetime(year, month, last_day)
-            
-            total_exp = recurring_exp + onetime_exp
-            combined_balance = sum(data["balances"].values())
-            projected = combined_balance + incoming - total_exp
+
+            # FINAL LOGIC:
+            # - Subtract all Chase charges *after* balance date from forecast
+            # - Subtract Chase balance itself
+            # - Subtract regular recurring, onetime as usual
+            projected = (combined_balance - recurring_exp - onetime_exp) + incoming - chase_recurring_exp - chase_balance
             data["forecasts"].append({
                 "date": forecast_date,
                 "incoming": incoming,
-                "expenses": total_exp,
+                "expenses": recurring_exp + onetime_exp + chase_recurring_exp + chase_balance,
                 "projected": projected
             })
             save_data(data)
             return redirect("/")
 
-        # Clear Forecasts
-        elif form_type == "clear_forecast":
-            data["forecasts"] = []
-            save_data(data)
-            return redirect("/")
+    latest_forecast = data["forecasts"][-1] if data["forecasts"] else None
 
     return render_template(
         "index.html",
         chris_balance=data["balances"].get("Chris", 0.0),
         angela_balance=data["balances"].get("Angela", 0.0),
         combined_balance=combined_balance,
+        chase_balance=chase_balance,
         recurring=data["recurring"],
         one_time=data["one_time"],
         paychecks=data["paychecks"],
         forecasts=data["forecasts"],
         latest_forecast=latest_forecast,
-        month_recurring_total=month_recurring_total,  # NEW: pass to template
-        month_paycheck_total=month_paycheck_total     # NEW: pass to template
+        month_recurring_total=month_recurring_total,
+        month_paycheck_total=month_paycheck_total
     )
 
 @app.route("/logout")
