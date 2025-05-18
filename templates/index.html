@@ -5,175 +5,137 @@
     <title>{{ latest_forecast['projected'] | default('Family Budget Tracker') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
+        /* === GENERAL LAYOUT === */
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #fcf6e8, #ede8e2 100%);
+            background: linear-gradient(135deg, #f9f7f3, #efe7da 100%);
             margin: 0;
             padding: 0;
         }
         .main-container {
-            max-width: 520px;
-            margin: 40px auto;
+            max-width: 550px;
+            margin: 44px auto;
+        }
+
+        /* === PREMIUM GOLD BORDER EFFECT === */
+        .card, .chase-card {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow:
+                0 1px 8px 0 rgba(220, 180, 80, 0.13),
+                0 8px 40px 0 rgba(220, 180, 80, 0.11),
+                0 0 0 4px rgba(239,215,96, 0.09) inset,
+                0 0 0 1.5px #e7b24b inset;
+            border: 3px solid;
+            border-image: linear-gradient(100deg,
+                #fae072 0%, #f9ca1e 13%, #ffe6b8 27%, #ffe066 43%, #b89445 59%, #fff4c3 70%, #ffd700 87%, #c29715 100%
+            ) 1;
+            margin-bottom: 25px;
+            padding: 30px 24px 22px 24px;
+            position: relative;
         }
         .forecast-header {
-            background: linear-gradient(90deg, #edd28b 0%, #d7c067 100%);
-            color: #7a6325;
-            border-radius: 22px;
-            padding: 26px 34px;
-            font-size: 2.1rem;
+            background: linear-gradient(100deg, #ffe066 10%, #e7b24b 60%, #fff4c3 100%);
+            color: #8e6d13;
+            border-radius: 24px;
+            padding: 26px 36px;
+            font-size: 2.2rem;
             font-weight: bold;
-            box-shadow: 0 4px 18px rgba(173, 151, 37, 0.16);
             text-align: center;
             margin-bottom: 34px;
-            letter-spacing: 1px;
-            border: 2px solid #e7c963;
+            letter-spacing: 1.1px;
+            border: 3px solid #ffe066;
+            box-shadow:
+                0 2px 18px 0 rgba(220, 180, 80, 0.17),
+                0 0 0 1.8px #fff4c3 inset,
+                0 0 0 7px rgba(239,215,96, 0.08) inset;
         }
-        .card, .chase-card {
-            background: #fffdf7;
-            border-radius: 18px;
-            box-shadow: 0 2px 12px rgba(170, 153, 55, 0.08), 0 6px 32px rgba(230, 215, 120, 0.08);
-            padding: 28px 24px 18px 24px;
-            margin-bottom: 26px;
-            border: 1.7px solid #e7c963;
+
+        /* === CHECKING BALANCE SPECIAL CARD === */
+        .checking-card {
+            padding-top: 18px;
+            padding-bottom: 18px;
+            margin-bottom: 34px;
         }
-        .chase-header {
-            color: #ae8a13;
-            font-weight: 700;
-            font-size: 1.23rem;
-        }
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 18px;
-        }
-        .summary-label {
-            font-weight: bold;
-            color: #90731d;
-        }
-        .row {
+        .checking-row {
             display: flex;
             align-items: center;
-            gap: 22px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
+            margin-bottom: 28px;
         }
-        .piece-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: bold;
-            font-size: 1.04rem;
-            color: #917633;
-            min-width: 130px;
+        .checking-row:last-of-type {
+            margin-bottom: 34px;
         }
-        .piece-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #fffbe7 70%, #f5e6be 100%);
-            box-shadow: 0 1px 7px #e7c96355;
+        .piece-3d {
+            width: 72px;
+            height: 72px;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-right: 18px;
+            margin-left: 0;
+            /* Remove any background. */
+            background: none;
+            /* 3D Drop Shadow directly below piece, sharp for realism */
+            filter: drop-shadow(0 11px 10px rgba(202,153,47,0.18))
+                    drop-shadow(0 1.5px 0px #a28237);
         }
-        .piece-icon img {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            display: block;
-        }
-        input, select, button {
-            border-radius: 10px;
-            border: 1.4px solid #e7c963;
-            padding: 11px 13px;
-            margin-right: 10px;
-            margin-bottom: 8px;
-            font-size: 1rem;
-            background: #f7f3df;
-            transition: box-shadow 0.16s;
-        }
-        input:focus, select:focus {
-            outline: 2px solid #e7c963;
-            box-shadow: 0 0 7px #e7c96377;
-        }
-        .btn-blue {
-            background: linear-gradient(90deg, #ede6cd 60%, #d2b23a 100%);
-            color: #7a6325;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            transition: box-shadow 0.2s;
-            box-shadow: 0 1px 6px #e7c96344;
-        }
-        .btn-green {
-            background: linear-gradient(90deg, #f5f2cb, #c1c744 80%);
-            color: #5d5823;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-yellow {
-            background: linear-gradient(90deg, #fff6ba, #ffe26e 80%);
-            color: #8d7b20;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-red {
-            background: linear-gradient(90deg, #ffbfae, #ff6454 100%);
-            color: #fff;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-gray {
-            background: #ede8e2;
-            color: #7b723c;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .expense-item, .paycheck-item {
-            background: #fbf8ee;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 1px 4px #e7c96333;
-        }
-        .expense-label, .paycheck-label {
-            font-weight: bold;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            margin-left: 8px;
-        }
-        .badge-active { background: #e2c13c; color: #fff; }
-        .badge-inactive { background: #b2a77a; color: #fff; }
-        h2 {
-            font-size: 1.23rem;
+        .checking-label {
+            font-size: 1.45rem;
             font-weight: 700;
-            margin-top: 0;
-            margin-bottom: 18px;
-            color: #917633;
+            color: #b89445;
+            letter-spacing: 1.2px;
+            min-width: 170px;
         }
-        label {
-            font-size: 1rem;
+        .checking-input {
+            flex: 1 1 125px;
+            font-size: 1.28rem;
+            background: linear-gradient(100deg, #fffdf5, #fff7d6 90%);
+            border: 2px solid #ffe066;
+            border-radius: 13px;
+            padding: 14px 14px;
+            box-shadow: 0 2px 9px 0 #f7e29377;
+            color: #b89445;
+            font-weight: 600;
+            margin-left: 20px;
         }
-        ul {
-            padding-left: 18px;
+        .combined-balance {
+            margin-top: 10px;
+            font-size: 1.18rem;
+            font-weight: bold;
+            color: #1b190b;
+            letter-spacing: 1px;
         }
-        @media (max-width: 600px) {
-            .main-container { max-width: 99%; padding: 6px; }
-            .forecast-header { font-size: 1.15rem; padding: 10px; }
-            .card, .chase-card { padding: 10px 6px; }
-            .row { flex-direction: column; gap: 0; }
-            .piece-label { min-width: 0; margin-bottom: 4px; }
+        .update-btn {
+            margin-top: 22px;
+            width: 220px;
+            font-size: 1.25rem;
+            background: linear-gradient(90deg, #ffe066 0%, #c29715 100%);
+            color: #9c790d;
+            border: none;
+            border-radius: 13px;
+            padding: 15px 0;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow:
+                0 3px 14px 0 #e2bc4375,
+                0 0px 0px #fff;
+            transition: box-shadow 0.17s, background 0.17s;
+        }
+        .update-btn:active {
+            background: linear-gradient(95deg, #ffe6b8 10%, #ffe066 100%);
+            box-shadow: 0 0 0 0 #fff;
+        }
+        /* ...rest of your CSS for other cards/buttons, adjust golds similarly... */
+
+        .summary-label { font-weight: bold; color: #b89445; }
+
+        @media (max-width: 650px) {
+            .main-container { max-width: 99vw; padding: 7px; }
+            .forecast-header { font-size: 1.18rem; padding: 12px 4px; }
+            .card, .chase-card, .checking-card { padding: 10px 2vw; }
+            .checking-row { flex-direction: column; align-items: flex-start; }
+            .piece-3d { margin-bottom: 12px; }
+            .checking-label, .checking-input { margin-left: 0; }
         }
     </style>
 </head>
@@ -188,23 +150,31 @@
         {% endif %}
     </div>
 
-    <!-- Chase Balance Card (with editing) -->
-    <div class="chase-card">
-        <div class="chase-header">Chase Card Balance</div>
-        <div style="font-size: 1.15rem; margin-bottom:10px;">
-            <b>Balance:</b> ${{ chase_balance }}
-            {% if chase_balance_date %}
-                <span style="color: #555;">(as of {{ chase_balance_date.strftime('%Y-%m-%d') }})</span>
-            {% endif %}
+    <!-- Checking Balances Card with Chess Pieces -->
+    <form method="post" class="card checking-card">
+        <h2 style="font-size:2.1rem; color:#b89445; font-weight:800; letter-spacing:1.3px;">Checking Balances</h2>
+        <div class="checking-row">
+            <div class="piece-3d">
+                <img src="{{ url_for('static', filename='King.png.PNG') }}" alt="White King" width="64" height="64" draggable="false">
+            </div>
+            <span class="checking-label">Chris Checking</span>
+            <input class="checking-input" type="number" name="chris_balance" value="{{ chris_balance }}">
         </div>
-        <form method="post" style="display: flex; gap: 8px; align-items: center;">
-            <input type="number" name="chase_balance" step="0.01" placeholder="New Balance" style="flex:1;">
-            <input type="hidden" name="form_type" value="update_chase_balance">
-            <button class="btn-yellow" type="submit" style="margin-bottom:0;">Update</button>
-        </form>
-    </div>
+        <div class="checking-row">
+            <div class="piece-3d">
+                <img src="{{ url_for('static', filename='Queen.png.PNG') }}" alt="White Queen" width="64" height="64" draggable="false">
+            </div>
+            <span class="checking-label">Angela Checking</span>
+            <input class="checking-input" type="number" name="angela_balance" value="{{ angela_balance }}">
+        </div>
+        <div class="combined-balance"><b>Combined Balance:</b> ${{ combined_balance }}</div>
+        <input type="hidden" name="form_type" value="update_balances">
+        <button class="update-btn" type="submit">Update Balances</button>
+    </form>
 
-    <!-- MONTHLY INCOME & EXPENSE SUMMARY -->
+    <!-- ... The rest of your app's cards and forms, all using the same gold-border style ... -->
+
+    <!-- Monthly Income & Expenses -->
     <div class="card">
         <div class="summary-row">
             <span class="summary-label">This Month's Income:</span>
@@ -216,29 +186,21 @@
         </div>
     </div>
 
-    <!-- Checking Balances Card -->
-    <form method="post" class="card">
-        <h2>Checking Balances</h2>
-        <div class="row">
-            <span class="piece-label">
-                <span class="piece-icon">
-                    <img src="{{ url_for('static', filename='King.png.PNG') }}" alt="Chris King Icon">
-                </span>
-                Chris Checking
-            </span>
-            <input type="number" name="chris_balance" value="{{ chris_balance }}">
-            <span class="piece-label">
-                <span class="piece-icon">
-                    <img src="{{ url_for('static', filename='Queen.png.PNG') }}" alt="Angela Queen Icon">
-                </span>
-                Angela Checking
-            </span>
-            <input type="number" name="angela_balance" value="{{ angela_balance }}">
+    <!-- Chase Card Balance -->
+    <div class="chase-card">
+        <div class="chase-header" style="color:#c29715; font-size:1.22rem; font-weight:700;">Chase Card Balance</div>
+        <div style="font-size: 1.15rem; margin-bottom:10px;">
+            <b>Balance:</b> ${{ chase_balance }}
+            {% if chase_balance_date %}
+                <span style="color: #555;">(as of {{ chase_balance_date.strftime('%Y-%m-%d') }})</span>
+            {% endif %}
         </div>
-        <div><b>Combined Balance:</b> ${{ combined_balance }}</div>
-        <input type="hidden" name="form_type" value="update_balances">
-        <button class="btn-blue" type="submit">Update Balances</button>
-    </form>
+        <form method="post" style="display: flex; gap: 8px; align-items: center;">
+            <input type="number" name="chase_balance" step="0.01" placeholder="New Balance" style="flex:1;">
+            <input type="hidden" name="form_type" value="update_chase_balance">
+            <button class="update-btn" type="submit" style="margin-bottom:0;">Update</button>
+        </form>
+    </div>
 
     <!-- Add Recurring Expense Card -->
     <form method="post" class="card" autocomplete="off">
