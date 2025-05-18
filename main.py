@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, session
 import os
 import psycopg2
-from datetime import datetime
+from datetime import datetime, date, time
 import calendar
 
 app = Flask(__name__)
@@ -219,6 +219,10 @@ def index():
     chase_balance = data["chase_balance"]
     chase_balance_date = data["chase_balance_date"]
 
+    # ==== FIX: Always compare datetime to datetime ====
+    if chase_balance_date and isinstance(chase_balance_date, date) and not isinstance(chase_balance_date, datetime):
+        chase_balance_date = datetime.combine(chase_balance_date, time.min)
+
     today = datetime.today()
     current_month = today.strftime('%Y-%m')
     month_recurring_total = sum(
@@ -363,6 +367,7 @@ def index():
                 is_chase = exp.get("chasecard", False)
                 charge_day = int(exp.get("chargeday") or day)
                 next_date = get_next_occurrence(charge_day, today)
+                # === FIX: Always compare datetime to datetime ===
                 if is_chase and chase_balance_date:
                     while next_date <= chase_balance_date:
                         year, month = next_date.year, next_date.month
