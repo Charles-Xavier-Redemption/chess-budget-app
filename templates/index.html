@@ -163,14 +163,20 @@
         {% endif %}
     </div>
 
-    <!-- Chase Balance Card -->
+    <!-- Chase Balance Card (with editing) -->
     <div class="chase-card">
         <div class="chase-header">Chase Card Balance</div>
-        <div style="font-size: 1.15rem;">
+        <div style="font-size: 1.15rem; margin-bottom:10px;">
             <b>Balance:</b> ${{ chase_balance }}
-            {# Optional: If you want to show "as of" date: #}
-            {# {% if chase_balance_date %} <span style="color: #555;">(as of {{ chase_balance_date.strftime('%Y-%m-%d') }})</span> {% endif %} #}
+            {% if chase_balance_date %}
+                <span style="color: #555;">(as of {{ chase_balance_date.strftime('%Y-%m-%d') }})</span>
+            {% endif %}
         </div>
+        <form method="post" style="display: flex; gap: 8px; align-items: center;">
+            <input type="number" name="chase_balance" step="0.01" placeholder="New Balance" style="flex:1;">
+            <input type="hidden" name="form_type" value="update_chase_balance">
+            <button class="btn-yellow" type="submit" style="margin-bottom:0;">Update</button>
+        </form>
     </div>
 
     <!-- MONTHLY INCOME & EXPENSE SUMMARY -->
@@ -219,80 +225,106 @@
     <!-- Recurring Expenses - Paid on Chase Card -->
     <div class="card">
         <h2>Recurring (Paid on Chase Card)</h2>
-        {% set has_chase = false %}
-        {% for item in recurring if item.chasecard %}
-            {% set has_chase = true %}
-            <div class="expense-item">
-                <span class="expense-label">
-                    <b>{{ item.name }}</b>: ${{ item.amount }} on day {{ item.day }}
-                    <span class="badge {% if item.active %}badge-active{% else %}badge-inactive{% endif %}">
-                        {% if item.active %}Active{% else %}Inactive{% endif %}
+        <form method="post" style="margin-bottom: 12px;">
+            <input type="hidden" name="form_type" value="toggle_recurring_chase">
+            <button class="btn-blue" type="submit">
+                {% if recurring_chase_shown %}
+                    Hide Details
+                {% else %}
+                    Show Details
+                {% endif %}
+            </button>
+            <span style="margin-left: 18px;"><b>Total:</b> ${{ chase_recurring_total }}</span>
+        </form>
+        {% if recurring_chase_shown %}
+            {% set has_chase = false %}
+            {% for item in recurring if item.chasecard %}
+                {% set has_chase = true %}
+                <div class="expense-item">
+                    <span class="expense-label">
+                        <b>{{ item.name }}</b>: ${{ item.amount }} on day {{ item.day }}
+                        <span class="badge {% if item.active %}badge-active{% else %}badge-inactive{% endif %}">
+                            {% if item.active %}Active{% else %}Inactive{% endif %}
+                        </span>
                     </span>
-                </span>
-                <span>
-                    {% if item.active %}
+                    <span>
+                        {% if item.active %}
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="form_type" value="deactivate_recurring">
+                                <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                                <button class="btn-gray" type="submit">Deactivate</button>
+                            </form>
+                        {% else %}
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="form_type" value="activate_recurring">
+                                <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                                <button class="btn-green" type="submit">Activate</button>
+                            </form>
+                        {% endif %}
                         <form method="post" style="display:inline;">
-                            <input type="hidden" name="form_type" value="deactivate_recurring">
+                            <input type="hidden" name="form_type" value="delete_recurring">
                             <input type="hidden" name="idx" value="{{ loop.index0 }}">
-                            <button class="btn-gray" type="submit">Deactivate</button>
+                            <button class="btn-red" type="submit">Delete</button>
                         </form>
-                    {% else %}
-                        <form method="post" style="display:inline;">
-                            <input type="hidden" name="form_type" value="activate_recurring">
-                            <input type="hidden" name="idx" value="{{ loop.index0 }}">
-                            <button class="btn-green" type="submit">Activate</button>
-                        </form>
-                    {% endif %}
-                    <form method="post" style="display:inline;">
-                        <input type="hidden" name="form_type" value="delete_recurring">
-                        <input type="hidden" name="idx" value="{{ loop.index0 }}">
-                        <button class="btn-red" type="submit">Delete</button>
-                    </form>
-                </span>
-            </div>
-        {% endfor %}
-        {% if not has_chase %}
-            <p style="color:#aaa;">No Chase Card recurring expenses.</p>
+                    </span>
+                </div>
+            {% endfor %}
+            {% if not has_chase %}
+                <p style="color:#aaa;">No Chase Card recurring expenses.</p>
+            {% endif %}
         {% endif %}
     </div>
 
     <!-- Recurring Expenses - Paid from Checking -->
     <div class="card">
         <h2>Other Recurring Expenses</h2>
-        {% set has_other = false %}
-        {% for item in recurring if not item.chasecard %}
-            {% set has_other = true %}
-            <div class="expense-item">
-                <span class="expense-label">
-                    <b>{{ item.name }}</b>: ${{ item.amount }} from {{ item.account }} on day {{ item.day }}
-                    <span class="badge {% if item.active %}badge-active{% else %}badge-inactive{% endif %}">
-                        {% if item.active %}Active{% else %}Inactive{% endif %}
+        <form method="post" style="margin-bottom: 12px;">
+            <input type="hidden" name="form_type" value="toggle_recurring_other">
+            <button class="btn-blue" type="submit">
+                {% if recurring_other_shown %}
+                    Hide Details
+                {% else %}
+                    Show Details
+                {% endif %}
+            </button>
+            <span style="margin-left: 18px;"><b>Total:</b> ${{ nonchase_recurring_total }}</span>
+        </form>
+        {% if recurring_other_shown %}
+            {% set has_other = false %}
+            {% for item in recurring if not item.chasecard %}
+                {% set has_other = true %}
+                <div class="expense-item">
+                    <span class="expense-label">
+                        <b>{{ item.name }}</b>: ${{ item.amount }} from {{ item.account }} on day {{ item.day }}
+                        <span class="badge {% if item.active %}badge-active{% else %}badge-inactive{% endif %}">
+                            {% if item.active %}Active{% else %}Inactive{% endif %}
+                        </span>
                     </span>
-                </span>
-                <span>
-                    {% if item.active %}
+                    <span>
+                        {% if item.active %}
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="form_type" value="deactivate_recurring">
+                                <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                                <button class="btn-gray" type="submit">Deactivate</button>
+                            </form>
+                        {% else %}
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="form_type" value="activate_recurring">
+                                <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                                <button class="btn-green" type="submit">Activate</button>
+                            </form>
+                        {% endif %}
                         <form method="post" style="display:inline;">
-                            <input type="hidden" name="form_type" value="deactivate_recurring">
+                            <input type="hidden" name="form_type" value="delete_recurring">
                             <input type="hidden" name="idx" value="{{ loop.index0 }}">
-                            <button class="btn-gray" type="submit">Deactivate</button>
+                            <button class="btn-red" type="submit">Delete</button>
                         </form>
-                    {% else %}
-                        <form method="post" style="display:inline;">
-                            <input type="hidden" name="form_type" value="activate_recurring">
-                            <input type="hidden" name="idx" value="{{ loop.index0 }}">
-                            <button class="btn-green" type="submit">Activate</button>
-                        </form>
-                    {% endif %}
-                    <form method="post" style="display:inline;">
-                        <input type="hidden" name="form_type" value="delete_recurring">
-                        <input type="hidden" name="idx" value="{{ loop.index0 }}">
-                        <button class="btn-red" type="submit">Delete</button>
-                    </form>
-                </span>
-            </div>
-        {% endfor %}
-        {% if not has_other %}
-            <p style="color:#aaa;">No other recurring expenses.</p>
+                    </span>
+                </div>
+            {% endfor %}
+            {% if not has_other %}
+                <p style="color:#aaa;">No other recurring expenses.</p>
+            {% endif %}
         {% endif %}
     </div>
 
