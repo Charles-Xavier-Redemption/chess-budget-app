@@ -191,6 +191,12 @@ def get_next_occurrence(recurring_day, base_date):
 @app.route("/", methods=["GET", "POST"])
 @require_pin
 def index():
+    # === SESSION STATE: toggles ===
+    if "recurring_chase_shown" not in session:
+        session["recurring_chase_shown"] = False
+    if "recurring_other_shown" not in session:
+        session["recurring_other_shown"] = False
+
     data = load_data()
     combined_balance = sum(data["balances"].values())
     chase_balance = data["chase_balance"]
@@ -210,14 +216,37 @@ def index():
         if p["active"] and p["date"].startswith(current_month)
     )
 
+    # Compute Chase and non-Chase recurring totals
+    chase_recurring_total = sum(item["amount"] for item in data["recurring"] if item["chasecard"] and item["active"])
+    nonchase_recurring_total = sum(item["amount"] for item in data["recurring"] if not item["chasecard"] and item["active"])
+
     if request.method == "POST":
         form_type = request.form.get("form_type")
+
+        # ===== TOGGLE HANDLERS =====
+        if form_type == "toggle_recurring_chase":
+            session["recurring_chase_shown"] = not session.get("recurring_chase_shown", False)
+            return redirect("/")
+        if form_type == "toggle_recurring_other":
+            session["recurring_other_shown"] = not session.get("recurring_other_shown", False)
+            return redirect("/")
 
         # ===== CRUD: Balances =====
         if form_type == "update_balances":
             data["balances"]["Chris"] = float(request.form.get("chris_balance", 0))
             data["balances"]["Angela"] = float(request.form.get("angela_balance", 0))
             save_data(data)
+            return redirect("/")
+
+        # ===== NEW: UPDATE CHASE BALANCE =====
+        elif form_type == "update_chase_balance":
+            new_chase = float(request.form.get("chase_balance", 0))
+            today_str = datetime.today().strftime("%Y-%m-%d")
+            # Overwrite in Google Sheet
+            chase_ws = get_gsheet_tab('ChaseBalance')
+            chase_ws.clear()
+            chase_ws.append_row(['Name', 'Amount', 'BalanceAsOf'])
+            chase_ws.append_row(['Chase', new_chase, today_str])
             return redirect("/")
 
         # ===== CRUD: Recurring =====
@@ -385,13 +414,18 @@ def index():
         angela_balance=data["balances"].get("Angela", 0.0),
         combined_balance=combined_balance,
         chase_balance=chase_balance,
+        chase_balance_date=chase_balance_date,
         recurring=data["recurring"],
         one_time=data["one_time"],
         paychecks=data["paychecks"],
         forecasts=data["forecasts"],
         latest_forecast=latest_forecast,
         month_recurring_total=month_recurring_total,
-        month_paycheck_total=month_paycheck_total
+        month_paycheck_total=month_paycheck_total,
+        chase_recurring_total=chase_recurring_total,
+        nonchase_recurring_total=nonchase_recurring_total,
+        recurring_chase_shown=session.get("recurring_chase_shown", False),
+        recurring_other_shown=session.get("recurring_other_shown", False)
     )
 
 @app.route("/logout")
