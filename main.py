@@ -213,10 +213,101 @@ def index():
     if request.method == "POST":
         form_type = request.form.get("form_type")
 
-        # --- [Copy your CRUD for balances, recurring, onetime, paychecks here] ---
+        # ===== CRUD: Balances =====
+        if form_type == "update_balances":
+            data["balances"]["Chris"] = float(request.form.get("chris_balance", 0))
+            data["balances"]["Angela"] = float(request.form.get("angela_balance", 0))
+            save_data(data)
+            return redirect("/")
 
-        # Forecast with Chase logic (advanced, no double-count)
-        if form_type == "forecast":
+        # ===== CRUD: Recurring =====
+        elif form_type == "add_expense":
+            new_exp = {
+                "name": request.form["name"],
+                "amount": float(request.form["amount"]),
+                "account": request.form["account"],
+                "day": int(request.form["day"]),
+                "active": "active" in request.form,
+                "chasecard": False,  # You can add support for ChaseCard/ChargeDay in the form if you want
+                "chargeday": None,
+            }
+            data["recurring"].append(new_exp)
+            save_data(data)
+            return redirect("/")
+
+        elif form_type == "activate_recurring":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["recurring"]):
+                data["recurring"][idx]["active"] = True
+                save_data(data)
+            return redirect("/")
+
+        elif form_type == "deactivate_recurring":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["recurring"]):
+                data["recurring"][idx]["active"] = False
+                save_data(data)
+            return redirect("/")
+
+        elif form_type == "delete_recurring":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["recurring"]):
+                del data["recurring"][idx]
+                save_data(data)
+            return redirect("/")
+
+        # ===== CRUD: One-time =====
+        elif form_type == "add_onetime":
+            new_exp = {
+                "name": request.form["name"],
+                "amount": float(request.form["amount"]),
+                "account": request.form["account"],
+                "date": request.form["date"]
+            }
+            data["one_time"].append(new_exp)
+            save_data(data)
+            return redirect("/")
+
+        # ===== CRUD: Paychecks =====
+        elif form_type == "add_paycheck":
+            new_pay = {
+                "amount": float(request.form["amount"]),
+                "date": request.form["date"],
+                "active": True
+            }
+            data["paychecks"].append(new_pay)
+            save_data(data)
+            return redirect("/")
+
+        elif form_type == "activate_paycheck":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["paychecks"]):
+                data["paychecks"][idx]["active"] = True
+                save_data(data)
+            return redirect("/")
+
+        elif form_type == "deactivate_paycheck":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["paychecks"]):
+                data["paychecks"][idx]["active"] = False
+                save_data(data)
+            return redirect("/")
+
+        elif form_type == "delete_paycheck":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["paychecks"]):
+                del data["paychecks"][idx]
+                save_data(data)
+            return redirect("/")
+
+        # ===== CLEAR FORECASTS =====
+        elif form_type == "clear_forecast":
+            data["forecasts"] = []
+            save_data(data)
+            return redirect("/")
+
+        # ===== FORECAST WITH CHASE LOGIC =====
+        elif form_type == "forecast":
             forecast_date = request.form["forecast_date"]
             forecast_end = datetime.strptime(forecast_date, "%Y-%m-%d")
 
@@ -245,7 +336,6 @@ def index():
                 next_date = get_next_occurrence(charge_day, today)
                 # For ChaseCard, start at the later of chase_balance_date or today
                 if is_chase and chase_balance_date:
-                    base_start = chase_balance_date
                     # Move to the first charge *after* the chase_balance_date
                     while next_date <= chase_balance_date:
                         year, month = next_date.year, next_date.month
@@ -277,9 +367,6 @@ def index():
                         next_date = datetime(year, month, last_day)
 
             # FINAL LOGIC:
-            # - Subtract all Chase charges *after* balance date from forecast
-            # - Subtract Chase balance itself
-            # - Subtract regular recurring, onetime as usual
             projected = (combined_balance - recurring_exp - onetime_exp) + incoming - chase_recurring_exp - chase_balance
             data["forecasts"].append({
                 "date": forecast_date,
