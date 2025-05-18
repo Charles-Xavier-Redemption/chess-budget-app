@@ -165,6 +165,9 @@
         label {
             font-size: 1rem;
         }
+        ul {
+            padding-left: 18px;
+        }
         @media (max-width: 600px) {
             .main-container { max-width: 99%; padding: 6px; }
             .forecast-header { font-size: 1.15rem; padding: 10px; }
@@ -419,3 +422,28 @@
     </div>
 
     <!-- Forecast Card -->
+    <form method="post" class="card">
+        <h2>Forecast Future Balance</h2>
+        <input name="forecast_date" type="date" required>
+        <input type="hidden" name="form_type" value="forecast">
+        <button class="btn-blue" type="submit">Run Forecast</button>
+    </form>
+
+    <!-- Historic Forecasts Card -->
+    <form method="post" class="card">
+        <h2>Historic Forecasts</h2>
+        {% if forecasts %}
+            <ul>
+                {% for f in forecasts %}
+                    <li><b>{{ f.date }}</b> | Incoming: ${{ f.incoming }} | Expenses: ${{ f.expenses }} | Projected: ${{ f.projected }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No forecasts yet.</p>
+        {% endif %}
+        <input type="hidden" name="form_type" value="clear_forecast">
+        <button class="btn-red" type="submit">Clear Forecast History</button>
+    </form>
+</div>
+</body>
+</html>
