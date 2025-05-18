@@ -47,7 +47,7 @@ def load_data():
             "day": int(row["Day"]),
             "active": str(row["Active"]).upper() == "TRUE",
             "chasecard": str(row.get("ChaseCard", "No")).strip().lower() == "yes",
-            "chargeday": int(row.get("ChargeDay", 0)) if row.get("ChargeDay", "").strip() != "" else None,
+            "chargeday": int(str(row.get("ChargeDay", "")).strip()) if str(row.get("ChargeDay", "")).strip() != "" else None,"chargeday": int(row.get("ChargeDay", 0)) if row.get("ChargeDay", "").strip() != "" else None,
         }
         for row in recurring_data if row["Amount"] != "" and row["Day"] != ""
     ]
