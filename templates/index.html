@@ -7,39 +7,39 @@
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #f0f3fa, #e6e9f0 100%);
+            background: linear-gradient(135deg, #fcf6e8, #ede8e2 100%);
             margin: 0;
             padding: 0;
         }
         .main-container {
-            max-width: 500px;
+            max-width: 520px;
             margin: 40px auto;
         }
         .forecast-header {
-            background: linear-gradient(90deg, #9fd6ff, #1e90ff);
-            color: #fff;
-            border-radius: 20px;
-            padding: 24px 32px;
-            font-size: 2rem;
+            background: linear-gradient(90deg, #edd28b 0%, #d7c067 100%);
+            color: #7a6325;
+            border-radius: 22px;
+            padding: 26px 34px;
+            font-size: 2.1rem;
             font-weight: bold;
-            box-shadow: 0 4px 12px rgba(30,144,255,0.16);
+            box-shadow: 0 4px 18px rgba(173, 151, 37, 0.16);
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 34px;
             letter-spacing: 1px;
+            border: 2px solid #e7c963;
         }
-        .chase-card {
-            background: #fffbe8;
-            border: 1px solid #f2d574;
-            border-radius: 16px;
-            box-shadow: 0 2px 10px rgba(255, 221, 90, 0.08), 0 6px 32px rgba(240, 214, 80, 0.07);
-            padding: 20px 24px 18px 24px;
-            margin-bottom: 24px;
+        .card, .chase-card {
+            background: #fffdf7;
+            border-radius: 18px;
+            box-shadow: 0 2px 12px rgba(170, 153, 55, 0.08), 0 6px 32px rgba(230, 215, 120, 0.08);
+            padding: 28px 24px 18px 24px;
+            margin-bottom: 26px;
+            border: 1.7px solid #e7c963;
         }
         .chase-header {
-            color: #c29715;
-            font-weight: 600;
-            margin-top: 0;
-            font-size: 1.22rem;
+            color: #ae8a13;
+            font-weight: 700;
+            font-size: 1.23rem;
         }
         .summary-row {
             display: flex;
@@ -48,89 +48,100 @@
         }
         .summary-label {
             font-weight: bold;
-            color: #235fa7;
-        }
-        .card {
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 2px 10px rgba(46,91,255,0.07), 0 6px 32px rgba(30,64,175,0.07);
-            padding: 28px 24px 18px 24px;
-            margin-bottom: 24px;
+            color: #90731d;
         }
         .row {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 22px;
             flex-wrap: wrap;
+            margin-bottom: 16px;
         }
-        h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 18px;
-            color: #2952a3;
+        .piece-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 1.04rem;
+            color: #917633;
+            min-width: 130px;
         }
-        label {
-            font-size: 0.98rem;
-            margin-bottom: 0;
+        .piece-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fffbe7 70%, #f5e6be 100%);
+            box-shadow: 0 1px 7px #e7c96355;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .piece-icon img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            display: block;
         }
         input, select, button {
-            border-radius: 8px;
-            border: 1px solid #e3e7f2;
-            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1.4px solid #e7c963;
+            padding: 11px 13px;
             margin-right: 10px;
             margin-bottom: 8px;
             font-size: 1rem;
+            background: #f7f3df;
+            transition: box-shadow 0.16s;
         }
         input:focus, select:focus {
-            outline: 2px solid #1e90ff;
+            outline: 2px solid #e7c963;
+            box-shadow: 0 0 7px #e7c96377;
         }
         .btn-blue {
-            background: linear-gradient(90deg, #57aaff, #1e90ff);
-            color: #fff;
+            background: linear-gradient(90deg, #ede6cd 60%, #d2b23a 100%);
+            color: #7a6325;
             border: none;
             font-weight: bold;
             cursor: pointer;
             transition: box-shadow 0.2s;
-            box-shadow: 0 1px 6px rgba(30,144,255,0.10);
+            box-shadow: 0 1px 6px #e7c96344;
         }
         .btn-green {
-            background: linear-gradient(90deg, #4ee57b, #14c77d);
-            color: #fff;
+            background: linear-gradient(90deg, #f5f2cb, #c1c744 80%);
+            color: #5d5823;
             border: none;
             font-weight: bold;
             cursor: pointer;
         }
         .btn-yellow {
-            background: linear-gradient(90deg, #ffe66d, #ffd700);
-            color: #444;
+            background: linear-gradient(90deg, #fff6ba, #ffe26e 80%);
+            color: #8d7b20;
             border: none;
             font-weight: bold;
             cursor: pointer;
         }
         .btn-red {
-            background: linear-gradient(90deg, #ff6a7a, #ff2345);
+            background: linear-gradient(90deg, #ffbfae, #ff6454 100%);
             color: #fff;
             border: none;
             font-weight: bold;
             cursor: pointer;
         }
         .btn-gray {
-            background: #ccc;
-            color: #555;
+            background: #ede8e2;
+            color: #7b723c;
             border: none;
             font-weight: bold;
             cursor: pointer;
         }
         .expense-item, .paycheck-item {
-            background: #f8fafc;
+            background: #fbf8ee;
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 1px 4px rgba(30,64,175,0.04);
+            box-shadow: 0 1px 4px #e7c96333;
         }
         .expense-label, .paycheck-label {
             font-weight: bold;
@@ -142,13 +153,24 @@
             font-size: 0.85em;
             margin-left: 8px;
         }
-        .badge-active { background: #36d87a; color: #fff; }
-        .badge-inactive { background: #bbb; color: #fff; }
+        .badge-active { background: #e2c13c; color: #fff; }
+        .badge-inactive { background: #b2a77a; color: #fff; }
+        h2 {
+            font-size: 1.23rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: #917633;
+        }
+        label {
+            font-size: 1rem;
+        }
         @media (max-width: 600px) {
             .main-container { max-width: 99%; padding: 6px; }
-            .forecast-header { font-size: 1.2rem; padding: 10px; }
+            .forecast-header { font-size: 1.15rem; padding: 10px; }
             .card, .chase-card { padding: 10px 6px; }
             .row { flex-direction: column; gap: 0; }
+            .piece-label { min-width: 0; margin-bottom: 4px; }
         }
     </style>
 </head>
@@ -195,9 +217,19 @@
     <form method="post" class="card">
         <h2>Checking Balances</h2>
         <div class="row">
-            <label>Chris Checking</label>
+            <span class="piece-label">
+                <span class="piece-icon">
+                    <img src="{{ url_for('static', filename='King.png.PNG') }}" alt="Chris King Icon">
+                </span>
+                Chris Checking
+            </span>
             <input type="number" name="chris_balance" value="{{ chris_balance }}">
-            <label>Angela Checking</label>
+            <span class="piece-label">
+                <span class="piece-icon">
+                    <img src="{{ url_for('static', filename='Queen.png.PNG') }}" alt="Angela Queen Icon">
+                </span>
+                Angela Checking
+            </span>
             <input type="number" name="angela_balance" value="{{ angela_balance }}">
         </div>
         <div><b>Combined Balance:</b> ${{ combined_balance }}</div>
@@ -387,28 +419,3 @@
     </div>
 
     <!-- Forecast Card -->
-    <form method="post" class="card">
-        <h2>Forecast Future Balance</h2>
-        <input name="forecast_date" type="date" required>
-        <input type="hidden" name="form_type" value="forecast">
-        <button class="btn-blue" type="submit">Run Forecast</button>
-    </form>
-
-    <!-- Historic Forecasts Card -->
-    <form method="post" class="card">
-        <h2>Historic Forecasts</h2>
-        {% if forecasts %}
-            <ul>
-                {% for f in forecasts %}
-                    <li><b>{{ f.date }}</b> | Incoming: ${{ f.incoming }} | Expenses: ${{ f.expenses }} | Projected: ${{ f.projected }}</li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>No forecasts yet.</p>
-        {% endif %}
-        <input type="hidden" name="form_type" value="clear_forecast">
-        <button class="btn-red" type="submit">Clear Forecast History</button>
-    </form>
-</div>
-</body>
-</html>
