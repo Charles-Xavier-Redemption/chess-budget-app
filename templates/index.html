@@ -27,6 +27,20 @@
             margin-bottom: 32px;
             letter-spacing: 1px;
         }
+        .chase-card {
+            background: #fffbe8;
+            border: 1px solid #f2d574;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(255, 221, 90, 0.08), 0 6px 32px rgba(240, 214, 80, 0.07);
+            padding: 20px 24px 18px 24px;
+            margin-bottom: 24px;
+        }
+        .chase-header {
+            color: #c29715;
+            font-weight: 600;
+            margin-top: 0;
+            font-size: 1.22rem;
+        }
         .summary-row {
             display: flex;
             justify-content: space-between;
@@ -133,7 +147,7 @@
         @media (max-width: 600px) {
             .main-container { max-width: 99%; padding: 6px; }
             .forecast-header { font-size: 1.2rem; padding: 10px; }
-            .card { padding: 10px 6px; }
+            .card, .chase-card { padding: 10px 6px; }
             .row { flex-direction: column; gap: 0; }
         }
     </style>
@@ -147,6 +161,16 @@
         {% else %}
             Family Budget Tracker
         {% endif %}
+    </div>
+
+    <!-- Chase Balance Card -->
+    <div class="chase-card">
+        <div class="chase-header">Chase Card Balance</div>
+        <div style="font-size: 1.15rem;">
+            <b>Balance:</b> ${{ chase_balance }}
+            {# Optional: If you want to show "as of" date: #}
+            {# {% if chase_balance_date %} <span style="color: #555;">(as of {{ chase_balance_date.strftime('%Y-%m-%d') }})</span> {% endif %} #}
+        </div>
     </div>
 
     <!-- MONTHLY INCOME & EXPENSE SUMMARY -->
@@ -192,10 +216,52 @@
         <button class="btn-green" type="submit">Add</button>
     </form>
 
-    <!-- Recurring Expenses List Card -->
+    <!-- Recurring Expenses - Paid on Chase Card -->
     <div class="card">
-        <h2>Recurring Expenses ({{ month_recurring_total }})</h2>
-        {% for item in recurring %}
+        <h2>Recurring (Paid on Chase Card)</h2>
+        {% set has_chase = false %}
+        {% for item in recurring if item.chasecard %}
+            {% set has_chase = true %}
+            <div class="expense-item">
+                <span class="expense-label">
+                    <b>{{ item.name }}</b>: ${{ item.amount }} on day {{ item.day }}
+                    <span class="badge {% if item.active %}badge-active{% else %}badge-inactive{% endif %}">
+                        {% if item.active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </span>
+                <span>
+                    {% if item.active %}
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="form_type" value="deactivate_recurring">
+                            <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                            <button class="btn-gray" type="submit">Deactivate</button>
+                        </form>
+                    {% else %}
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="form_type" value="activate_recurring">
+                            <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                            <button class="btn-green" type="submit">Activate</button>
+                        </form>
+                    {% endif %}
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="form_type" value="delete_recurring">
+                        <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                        <button class="btn-red" type="submit">Delete</button>
+                    </form>
+                </span>
+            </div>
+        {% endfor %}
+        {% if not has_chase %}
+            <p style="color:#aaa;">No Chase Card recurring expenses.</p>
+        {% endif %}
+    </div>
+
+    <!-- Recurring Expenses - Paid from Checking -->
+    <div class="card">
+        <h2>Other Recurring Expenses</h2>
+        {% set has_other = false %}
+        {% for item in recurring if not item.chasecard %}
+            {% set has_other = true %}
             <div class="expense-item">
                 <span class="expense-label">
                     <b>{{ item.name }}</b>: ${{ item.amount }} from {{ item.account }} on day {{ item.day }}
@@ -225,6 +291,9 @@
                 </span>
             </div>
         {% endfor %}
+        {% if not has_other %}
+            <p style="color:#aaa;">No other recurring expenses.</p>
+        {% endif %}
     </div>
 
     <!-- Add One-Time Expense Card -->
