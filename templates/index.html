@@ -5,137 +5,164 @@
     <title>{{ latest_forecast['projected'] | default('Family Budget Tracker') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        /* === GENERAL LAYOUT === */
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #f9f7f3, #efe7da 100%);
+            background: linear-gradient(135deg, #faf8f2, #efe6d9 100%);
             margin: 0;
             padding: 0;
         }
         .main-container {
-            max-width: 550px;
-            margin: 44px auto;
+            max-width: 520px;
+            margin: 40px auto;
+            padding: 0 6px;
         }
-
-        /* === PREMIUM GOLD BORDER EFFECT === */
-        .card, .chase-card {
-            background: #fff;
-            border-radius: 18px;
-            box-shadow:
-                0 1px 8px 0 rgba(220, 180, 80, 0.13),
-                0 8px 40px 0 rgba(220, 180, 80, 0.11),
-                0 0 0 4px rgba(239,215,96, 0.09) inset,
-                0 0 0 1.5px #e7b24b inset;
+        /* Shiny gold border for cards */
+        .card, .chase-card, .forecast-header {
+            border-radius: 20px;
             border: 3px solid;
-            border-image: linear-gradient(100deg,
-                #fae072 0%, #f9ca1e 13%, #ffe6b8 27%, #ffe066 43%, #b89445 59%, #fff4c3 70%, #ffd700 87%, #c29715 100%
-            ) 1;
-            margin-bottom: 25px;
-            padding: 30px 24px 22px 24px;
+            border-image: linear-gradient(90deg, #ffe66d 10%, #ffd700 50%, #fffbe8 90%) 1;
+            box-shadow: 0 4px 24px 0 rgba(255, 221, 90, 0.08), 0 6px 32px rgba(230, 195, 90, 0.07);
+            background: #fffdfa;
+            margin-bottom: 28px;
             position: relative;
         }
         .forecast-header {
-            background: linear-gradient(100deg, #ffe066 10%, #e7b24b 60%, #fff4c3 100%);
-            color: #8e6d13;
-            border-radius: 24px;
-            padding: 26px 36px;
-            font-size: 2.2rem;
+            background: linear-gradient(90deg, #ffe46a 30%, #f2d574 55%, #ffe26a 90%);
+            color: #9e7d16;
+            text-shadow: 0 2px 7px #fffad2, 0 1px 0 #eac843;
+            font-size: 2rem;
             font-weight: bold;
+            padding: 26px 32px;
             text-align: center;
             margin-bottom: 34px;
-            letter-spacing: 1.1px;
-            border: 3px solid #ffe066;
-            box-shadow:
-                0 2px 18px 0 rgba(220, 180, 80, 0.17),
-                0 0 0 1.8px #fff4c3 inset,
-                0 0 0 7px rgba(239,215,96, 0.08) inset;
+            letter-spacing: 1px;
+            border-radius: 20px;
         }
-
-        /* === CHECKING BALANCE SPECIAL CARD === */
-        .checking-card {
-            padding-top: 18px;
-            padding-bottom: 18px;
-            margin-bottom: 34px;
+        .card {
+            padding: 32px 26px 20px 26px;
+        }
+        .chase-card {
+            padding: 24px 18px 16px 18px;
+        }
+        .checking-balances {
+            display: flex;
+            flex-direction: column;
+            gap: 34px;
         }
         .checking-row {
             display: flex;
             align-items: center;
-            margin-bottom: 28px;
+            gap: 18px;
+            margin-bottom: 0;
         }
-        .checking-row:last-of-type {
-            margin-bottom: 34px;
+        .chess-icon {
+            width: 58px;
+            height: 58px;
+            display: block;
+            filter: drop-shadow(0px 6px 16px rgba(186, 156, 49, 0.21)) drop-shadow(0 2px 10px #fff8db);
         }
-        .piece-3d {
-            width: 72px;
-            height: 72px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 18px;
-            margin-left: 0;
-            /* Remove any background. */
-            background: none;
-            /* 3D Drop Shadow directly below piece, sharp for realism */
-            filter: drop-shadow(0 11px 10px rgba(202,153,47,0.18))
-                    drop-shadow(0 1.5px 0px #a28237);
+        .label-large {
+            font-size: 1.38rem;
+            font-weight: bold;
+            color: #ad912e;
+            display: block;
+            margin-bottom: 0;
         }
-        .checking-label {
-            font-size: 1.45rem;
-            font-weight: 700;
-            color: #b89445;
-            letter-spacing: 1.2px;
-            min-width: 170px;
-        }
-        .checking-input {
-            flex: 1 1 125px;
-            font-size: 1.28rem;
-            background: linear-gradient(100deg, #fffdf5, #fff7d6 90%);
-            border: 2px solid #ffe066;
-            border-radius: 13px;
-            padding: 14px 14px;
-            box-shadow: 0 2px 9px 0 #f7e29377;
-            color: #b89445;
-            font-weight: 600;
-            margin-left: 20px;
+        .input-block {
+            background: linear-gradient(92deg, #fff7c7 0%, #faf3c2 100%);
+            border: 2px solid #eed97b;
+            border-radius: 14px;
+            font-size: 1.38rem;
+            font-weight: bold;
+            color: #6c5e23;
+            padding: 18px 22px;
+            margin-left: auto;
+            box-shadow: 0 1px 7px #f8e18e88;
+            min-width: 110px;
         }
         .combined-balance {
-            margin-top: 10px;
-            font-size: 1.18rem;
+            font-size: 1.1rem;
             font-weight: bold;
-            color: #1b190b;
-            letter-spacing: 1px;
+            margin-top: 24px;
+            margin-bottom: 10px;
+            color: #2c2000;
         }
         .update-btn {
-            margin-top: 22px;
-            width: 220px;
-            font-size: 1.25rem;
-            background: linear-gradient(90deg, #ffe066 0%, #c29715 100%);
-            color: #9c790d;
+            background: linear-gradient(90deg, #fff7c7 8%, #fadb38 48%, #a88d32 100%);
+            color: #a88d32;
             border: none;
-            border-radius: 13px;
-            padding: 15px 0;
-            font-weight: 700;
+            font-size: 1.18rem;
+            font-weight: bold;
+            padding: 14px 0;
+            border-radius: 15px;
+            box-shadow: 0 2px 7px #fadb3880;
             cursor: pointer;
-            box-shadow:
-                0 3px 14px 0 #e2bc4375,
-                0 0px 0px #fff;
-            transition: box-shadow 0.17s, background 0.17s;
+            width: 100%;
+            transition: background 0.15s, box-shadow 0.15s;
         }
-        .update-btn:active {
-            background: linear-gradient(95deg, #ffe6b8 10%, #ffe066 100%);
-            box-shadow: 0 0 0 0 #fff;
+        .update-btn:hover {
+            background: linear-gradient(90deg, #ffe082 0%, #fadc43 80%);
+            box-shadow: 0 4px 24px #ffe46a55;
         }
-        /* ...rest of your CSS for other cards/buttons, adjust golds similarly... */
-
-        .summary-label { font-weight: bold; color: #b89445; }
-
-        @media (max-width: 650px) {
-            .main-container { max-width: 99vw; padding: 7px; }
-            .forecast-header { font-size: 1.18rem; padding: 12px 4px; }
-            .card, .chase-card, .checking-card { padding: 10px 2vw; }
-            .checking-row { flex-direction: column; align-items: flex-start; }
-            .piece-3d { margin-bottom: 12px; }
-            .checking-label, .checking-input { margin-left: 0; }
+        /* Rest of cards/buttons */
+        .btn-blue, .btn-green, .btn-yellow, .btn-red, .btn-gray {
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-top: 6px;
+            margin-bottom: 2px;
+            padding: 10px 17px;
+        }
+        .btn-blue {
+            background: linear-gradient(90deg, #b6d6ff, #6fb9ff);
+            color: #26589d;
+        }
+        .btn-green {
+            background: linear-gradient(90deg, #ddf6e8 0%, #a0ea90 100%);
+            color: #228b22;
+        }
+        .btn-yellow {
+            background: linear-gradient(90deg, #ffe66d, #ffd700);
+            color: #9e7d16;
+        }
+        .btn-red {
+            background: linear-gradient(90deg, #ffb5b5, #ff2323);
+            color: #871616;
+        }
+        .btn-gray {
+            background: #e5e5e5;
+            color: #444;
+        }
+        .expense-item, .paycheck-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 4px rgba(30,64,175,0.04);
+        }
+        .expense-label, .paycheck-label {
+            font-weight: bold;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-left: 8px;
+        }
+        .badge-active { background: #36d87a; color: #fff; }
+        .badge-inactive { background: #bbb; color: #fff; }
+        @media (max-width: 600px) {
+            .main-container { max-width: 100%; padding: 0; }
+            .forecast-header { font-size: 1.14rem; padding: 14px; }
+            .card, .chase-card { padding: 13px 4px 13px 7px; }
+            .checking-row { gap: 10px; }
+            .chess-icon { width: 38px; height: 38px; }
+            .input-block { font-size: 1.1rem; padding: 9px 9px; min-width: 78px; }
         }
     </style>
 </head>
@@ -144,51 +171,40 @@
 
     <div class="forecast-header">
         {% if latest_forecast %}
-            Projected Balance for {{ latest_forecast['date'] }}: ${{ latest_forecast['projected'] }}
+            Projected Balance for {{ latest_forecast['date'] }}:<br>
+            ${{ latest_forecast['projected'] }}
         {% else %}
             Family Budget Tracker
         {% endif %}
     </div>
 
-    <!-- Checking Balances Card with Chess Pieces -->
-    <form method="post" class="card checking-card">
-        <h2 style="font-size:2.1rem; color:#b89445; font-weight:800; letter-spacing:1.3px;">Checking Balances</h2>
-        <div class="checking-row">
-            <div class="piece-3d">
-                <img src="{{ url_for('static', filename='King.png.PNG') }}" alt="White King" width="64" height="64" draggable="false">
+    <!-- Checking Balances Card -->
+    <form method="post" class="card">
+        <h2 class="label-large" style="color: #ad912e;">Checking Balances</h2>
+        <div class="checking-balances">
+            <div class="checking-row">
+                <img src="{{ url_for('static', filename='King.png.PNG') }}" class="chess-icon" alt="King Chess Icon">
+                <div style="flex:1;">
+                    <span class="label-large">Chris Checking</span>
+                </div>
+                <input type="number" name="chris_balance" value="{{ chris_balance }}" class="input-block">
             </div>
-            <span class="checking-label">Chris Checking</span>
-            <input class="checking-input" type="number" name="chris_balance" value="{{ chris_balance }}">
-        </div>
-        <div class="checking-row">
-            <div class="piece-3d">
-                <img src="{{ url_for('static', filename='Queen.png.PNG') }}" alt="White Queen" width="64" height="64" draggable="false">
+            <div class="checking-row">
+                <img src="{{ url_for('static', filename='Queen.png.PNG') }}" class="chess-icon" alt="Queen Chess Icon">
+                <div style="flex:1;">
+                    <span class="label-large">Angela Checking</span>
+                </div>
+                <input type="number" name="angela_balance" value="{{ angela_balance }}" class="input-block">
             </div>
-            <span class="checking-label">Angela Checking</span>
-            <input class="checking-input" type="number" name="angela_balance" value="{{ angela_balance }}">
         </div>
-        <div class="combined-balance"><b>Combined Balance:</b> ${{ combined_balance }}</div>
+        <div class="combined-balance">Combined Balance: ${{ combined_balance }}</div>
         <input type="hidden" name="form_type" value="update_balances">
         <button class="update-btn" type="submit">Update Balances</button>
     </form>
 
-    <!-- ... The rest of your app's cards and forms, all using the same gold-border style ... -->
-
-    <!-- Monthly Income & Expenses -->
-    <div class="card">
-        <div class="summary-row">
-            <span class="summary-label">This Month's Income:</span>
-            <span>${{ month_paycheck_total }}</span>
-        </div>
-        <div class="summary-row">
-            <span class="summary-label">This Month's Recurring Expenses:</span>
-            <span>${{ month_recurring_total }}</span>
-        </div>
-    </div>
-
-    <!-- Chase Card Balance -->
-    <div class="chase-card">
-        <div class="chase-header" style="color:#c29715; font-size:1.22rem; font-weight:700;">Chase Card Balance</div>
+    <!-- Chase Balance Card (with editing) -->
+    <div class="chase-card card">
+        <div class="label-large" style="color: #c29715;">Chase Card Balance</div>
         <div style="font-size: 1.15rem; margin-bottom:10px;">
             <b>Balance:</b> ${{ chase_balance }}
             {% if chase_balance_date %}
@@ -196,15 +212,23 @@
             {% endif %}
         </div>
         <form method="post" style="display: flex; gap: 8px; align-items: center;">
-            <input type="number" name="chase_balance" step="0.01" placeholder="New Balance" style="flex:1;">
+            <input type="number" name="chase_balance" step="0.01" placeholder="New Balance" style="flex:1;" class="input-block">
             <input type="hidden" name="form_type" value="update_chase_balance">
-            <button class="update-btn" type="submit" style="margin-bottom:0;">Update</button>
+            <button class="btn-yellow" type="submit" style="margin-bottom:0;">Update</button>
         </form>
+    </div>
+
+    <!-- MONTHLY INCOME & EXPENSE SUMMARY -->
+    <div class="card">
+        <div class="summary-row" style="margin-bottom: 12px; color:#ad912e; font-weight:600;">
+            This Month's Income: ${{ month_paycheck_total }}<br>
+            This Month's Recurring Expenses: ${{ month_recurring_total }}
+        </div>
     </div>
 
     <!-- Add Recurring Expense Card -->
     <form method="post" class="card" autocomplete="off">
-        <h2>Add Recurring Expense</h2>
+        <h2 class="label-large">Add Recurring Expense</h2>
         <input name="name" placeholder="Name" required>
         <input name="amount" placeholder="Amount" type="number" step="0.01" required>
         <select name="account">
@@ -221,7 +245,7 @@
 
     <!-- Recurring Expenses - Paid on Chase Card -->
     <div class="card">
-        <h2>Recurring (Paid on Chase Card)</h2>
+        <h2 class="label-large">Recurring (Paid on Chase Card)</h2>
         <form method="post" style="margin-bottom: 12px;">
             <input type="hidden" name="form_type" value="toggle_recurring_chase">
             <button class="btn-blue" type="submit">
@@ -274,7 +298,7 @@
 
     <!-- Recurring Expenses - Paid from Checking -->
     <div class="card">
-        <h2>Other Recurring Expenses</h2>
+        <h2 class="label-large">Other Recurring Expenses</h2>
         <form method="post" style="margin-bottom: 12px;">
             <input type="hidden" name="form_type" value="toggle_recurring_other">
             <button class="btn-blue" type="submit">
@@ -327,7 +351,7 @@
 
     <!-- Add One-Time Expense Card -->
     <form method="post" class="card">
-        <h2>Add One-Time Expense</h2>
+        <h2 class="label-large">Add One-Time Expense</h2>
         <input name="name" placeholder="Name" required>
         <input name="amount" placeholder="Amount" type="number" step="0.01" required>
         <select name="account">
@@ -341,7 +365,7 @@
 
     <!-- Add Paycheck Card -->
     <form method="post" class="card">
-        <h2>Add Paycheck</h2>
+        <h2 class="label-large">Add Paycheck</h2>
         <input name="amount" placeholder="Amount" type="number" step="0.01" required>
         <input name="date" type="date" required>
         <input type="hidden" name="form_type" value="add_paycheck">
@@ -350,7 +374,7 @@
 
     <!-- Paycheck List Card -->
     <div class="card">
-        <h2>Paychecks ({{ month_paycheck_total }})</h2>
+        <h2 class="label-large">Paychecks ({{ month_paycheck_total }})</h2>
         {% for item in paychecks %}
             <div class="paycheck-item">
                 <span class="paycheck-label">
@@ -385,7 +409,7 @@
 
     <!-- Forecast Card -->
     <form method="post" class="card">
-        <h2>Forecast Future Balance</h2>
+        <h2 class="label-large">Forecast Future Balance</h2>
         <input name="forecast_date" type="date" required>
         <input type="hidden" name="form_type" value="forecast">
         <button class="btn-blue" type="submit">Run Forecast</button>
@@ -393,7 +417,7 @@
 
     <!-- Historic Forecasts Card -->
     <form method="post" class="card">
-        <h2>Historic Forecasts</h2>
+        <h2 class="label-large">Historic Forecasts</h2>
         {% if forecasts %}
             <ul>
                 {% for f in forecasts %}
