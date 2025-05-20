@@ -128,21 +128,6 @@ def save_forecasts(forecasts):
     cur.close()
     conn.close()
 
-# (The remaining unchanged parts of your code were omitted for brevity. Please merge this corrected logic back into your main.py.)
-
-def save_forecasts(forecasts):
-    conn = get_db_conn()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM forecasts")
-    for f in forecasts:
-        cur.execute(
-            "INSERT INTO forecasts (date, incoming, expenses, projected) VALUES (%s, %s, %s, %s)",
-            (f["date"], f["incoming"], f["expenses"], f["projected"])
-        )
-    conn.commit()
-    cur.close()
-    conn.close()
-
 def save_data(data):
     save_balances(data["balances"])
     save_recurring(data["recurring"])
@@ -187,7 +172,6 @@ def get_next_occurrence(recurring_day, base_date):
 @app.route("/", methods=["GET", "POST"])
 @require_pin
 def index():
-    # === SESSION STATE: toggles ===
     if "recurring_chase_shown" not in session:
         session["recurring_chase_shown"] = False
     if "recurring_other_shown" not in session:
@@ -198,7 +182,6 @@ def index():
     chase_balance = data["chase_balance"]
     chase_balance_date = data["chase_balance_date"]
 
-    # ==== FIX: Always compare datetime to datetime ====
     if chase_balance_date and isinstance(chase_balance_date, date) and not isinstance(chase_balance_date, datetime):
         chase_balance_date = datetime.combine(chase_balance_date, time.min)
 
@@ -243,14 +226,20 @@ def index():
 
         # === RECURRING ===
         elif form_type == "add_expense":
+            account_or_chase = request.form["account"]
+            is_chase = account_or_chase == "Chase"
+            chargeday = request.form.get("chargeday") if is_chase else None
+            # Fallback to "day" field if chargeday is empty or not provided
+            if is_chase and (not chargeday or chargeday == ""):
+                chargeday = request.form["day"]
             new_exp = {
                 "name": request.form["name"],
                 "amount": float(request.form["amount"]),
-                "account": request.form["account"],
+                "account": None if is_chase else account_or_chase,
                 "day": int(request.form["day"]),
                 "active": "active" in request.form,
-                "chasecard": False,
-                "chargeday": None,
+                "chasecard": is_chase,
+                "chargeday": int(chargeday) if is_chase and chargeday is not None else None,
             }
             data["recurring"].append(new_exp)
             save_recurring(data["recurring"])
@@ -346,7 +335,6 @@ def index():
                 is_chase = exp.get("chasecard", False)
                 charge_day = int(exp.get("chargeday") or day)
                 next_date = get_next_occurrence(charge_day, today)
-                # === FIX: Always compare datetime to datetime ===
                 if is_chase and chase_balance_date:
                     while next_date <= chase_balance_date:
                         year, month = next_date.year, next_date.month
