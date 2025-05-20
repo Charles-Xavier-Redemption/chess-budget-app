@@ -19,11 +19,9 @@ def load_data():
     conn = get_db_conn()
     cur = conn.cursor()
 
-    # BALANCES
     cur.execute("SELECT name, amount FROM balances")
     balances = {row[0]: float(row[1]) for row in cur.fetchall()}
 
-    # RECURRING
     cur.execute("SELECT name, amount, account, day, active, chasecard, chargeday FROM recurring")
     recurring = []
     for row in cur.fetchall():
@@ -37,43 +35,19 @@ def load_data():
             "chargeday": row[6]
         })
 
-    # ONETIME
     cur.execute("SELECT name, amount, account, date FROM onetime")
-    one_time = []
-    for row in cur.fetchall():
-        one_time.append({
-            "name": row[0],
-            "amount": float(row[1]),
-            "account": row[2],
-            "date": str(row[3])
-        })
+    one_time = [{"name": row[0], "amount": float(row[1]), "account": row[2], "date": str(row[3])} for row in cur.fetchall()]
 
-    # PAYCHECKS
     cur.execute("SELECT amount, date, active FROM paychecks")
-    paychecks = []
-    for row in cur.fetchall():
-        paychecks.append({
-            "amount": float(row[0]),
-            "date": str(row[1]),
-            "active": row[2]
-        })
+    paychecks = [{"amount": float(row[0]), "date": str(row[1]), "active": row[2]} for row in cur.fetchall()]
 
-    # CHASE BALANCE
     cur.execute("SELECT amount, balance_as_of FROM chase_balance ORDER BY balance_as_of DESC LIMIT 1")
     row = cur.fetchone()
     chase_balance = float(row[0]) if row else 0.0
     chase_balance_date = row[1] if row else None
 
-    # FORECASTS
     cur.execute("SELECT date, incoming, expenses, projected FROM forecasts ORDER BY date ASC")
-    forecasts = []
-    for row in cur.fetchall():
-        forecasts.append({
-            "date": str(row[0]),
-            "incoming": float(row[1]),
-            "expenses": float(row[2]),
-            "projected": float(row[3])
-        })
+    forecasts = [{"date": str(row[0]), "incoming": float(row[1]), "expenses": float(row[2]), "projected": float(row[3])} for row in cur.fetchall()]
 
     cur.close()
     conn.close()
@@ -105,10 +79,8 @@ def save_recurring(recurring):
     cur = conn.cursor()
     cur.execute("DELETE FROM recurring")
     for r in recurring:
-        cur.execute(
-            "INSERT INTO recurring (name, amount, account, day, active, chasecard, chargeday) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (r["name"], r["amount"], r["account"], r["day"], r["active"], r["chasecard"], r.get("chargeday"))
-        )
+        cur.execute("INSERT INTO recurring (name, amount, account, day, active, chasecard, chargeday) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    (r["name"], r["amount"], r["account"], r["day"], r["active"], r["chasecard"], r.get("chargeday")))
     conn.commit()
     cur.close()
     conn.close()
@@ -118,10 +90,8 @@ def save_onetime(one_time):
     cur = conn.cursor()
     cur.execute("DELETE FROM onetime")
     for o in one_time:
-        cur.execute(
-            "INSERT INTO onetime (name, amount, account, date) VALUES (%s, %s, %s, %s)",
-            (o["name"], o["amount"], o["account"], o["date"])
-        )
+        cur.execute("INSERT INTO onetime (name, amount, account, date) VALUES (%s, %s, %s, %s)",
+                    (o["name"], o["amount"], o["account"], o["date"]))
     conn.commit()
     cur.close()
     conn.close()
@@ -131,10 +101,8 @@ def save_paychecks(paychecks):
     cur = conn.cursor()
     cur.execute("DELETE FROM paychecks")
     for p in paychecks:
-        cur.execute(
-            "INSERT INTO paychecks (amount, date, active) VALUES (%s, %s, %s)",
-            (p["amount"], p["date"], p["active"])
-        )
+        cur.execute("INSERT INTO paychecks (amount, date, active) VALUES (%s, %s, %s)",
+                    (p["amount"], p["date"], p["active"]))
     conn.commit()
     cur.close()
     conn.close()
@@ -143,13 +111,24 @@ def save_chase_balance(amount, balance_as_of):
     conn = get_db_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM chase_balance")
-    cur.execute(
-        "INSERT INTO chase_balance (amount, balance_as_of) VALUES (%s, %s)",
-        (amount, balance_as_of)
-    )
+    cur.execute("INSERT INTO chase_balance (amount, balance_as_of) VALUES (%s, %s)",
+                (amount, balance_as_of))
     conn.commit()
     cur.close()
     conn.close()
+
+def save_forecasts(forecasts):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM forecasts")
+    for f in forecasts:
+        cur.execute("INSERT INTO forecasts (date, incoming, expenses, projected) VALUES (%s, %s, %s, %s)",
+                    (f["date"], f["incoming"], f["expenses"], f["projected"]))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+# (The remaining unchanged parts of your code were omitted for brevity. Please merge this corrected logic back into your main.py.)
 
 def save_forecasts(forecasts):
     conn = get_db_conn()
