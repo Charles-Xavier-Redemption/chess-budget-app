@@ -225,26 +225,21 @@ def index():
             return redirect("/")
 
         # === RECURRING ===
-        elif form_type == "add_expense":
-            account_or_chase = request.form["account"]
-            is_chase = account_or_chase == "Chase"
-            chargeday = request.form.get("chargeday") if is_chase else None
-            # Fallback to "day" field if chargeday is empty or not provided
-            if is_chase and (not chargeday or chargeday == ""):
-                chargeday = request.form["day"]
-            new_exp = {
-                "name": request.form["name"],
-                "amount": float(request.form["amount"]),
-                "account": None if is_chase else account_or_chase,
-                "day": int(request.form["day"]),
-                "active": "active" in request.form,
-                "chasecard": is_chase,
-                "chargeday": int(chargeday) if is_chase and chargeday is not None else None,
-            }
-            data["recurring"].append(new_exp)
-            save_recurring(data["recurring"])
-            return redirect("/")
-
+elif form_type == "add_expense":
+    account = request.form["account"]
+    is_chase = (account == "Chase")
+    new_exp = {
+        "name": request.form["name"],
+        "amount": float(request.form["amount"]),
+        "account": account,  # always set!
+        "day": int(request.form["day"]),
+        "active": "active" in request.form,
+        "chasecard": is_chase,
+        "chargeday": int(request.form["chargeday"]) if is_chase and request.form.get("chargeday") else None,
+    }
+    data["recurring"].append(new_exp)
+    save_recurring(data["recurring"])
+    return redirect("/")
         elif form_type == "activate_recurring":
             idx = int(request.form["idx"])
             if 0 <= idx < len(data["recurring"]):
