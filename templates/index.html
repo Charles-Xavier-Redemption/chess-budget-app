@@ -234,7 +234,7 @@
         </form>
         {% if recurring_chase_shown %}
             {% set has_chase = false %}
-            {% for i, item in recurring|enumerate %}
+            {% for item in recurring %}
                 {% if item.chasecard %}
                     {% set has_chase = true %}
                     <div class="expense-item">
@@ -251,19 +251,19 @@
                             {% if item.active %}
                                 <form method="post" style="display:inline;">
                                     <input type="hidden" name="form_type" value="deactivate_recurring">
-                                    <input type="hidden" name="idx" value="{{ i }}">
+                                    <input type="hidden" name="idx" value="{{ loop.index0 }}">
                                     <button class="btn-gray" type="submit">Deactivate</button>
                                 </form>
                             {% else %}
                                 <form method="post" style="display:inline;">
                                     <input type="hidden" name="form_type" value="activate_recurring">
-                                    <input type="hidden" name="idx" value="{{ i }}">
+                                    <input type="hidden" name="idx" value="{{ loop.index0 }}">
                                     <button class="btn-green" type="submit">Activate</button>
                                 </form>
                             {% endif %}
                             <form method="post" style="display:inline;">
                                 <input type="hidden" name="form_type" value="delete_recurring">
-                                <input type="hidden" name="idx" value="{{ i }}">
+                                <input type="hidden" name="idx" value="{{ loop.index0 }}">
                                 <button class="btn-red" type="submit">Delete</button>
                             </form>
                         </span>
@@ -292,7 +292,7 @@
         </form>
         {% if recurring_other_shown %}
             {% set has_other = false %}
-            {% for i, item in recurring|enumerate %}
+            {% for item in recurring %}
                 {% if not item.chasecard %}
                     {% set has_other = true %}
                     <div class="expense-item">
@@ -306,19 +306,19 @@
                             {% if item.active %}
                                 <form method="post" style="display:inline;">
                                     <input type="hidden" name="form_type" value="deactivate_recurring">
-                                    <input type="hidden" name="idx" value="{{ i }}">
+                                    <input type="hidden" name="idx" value="{{ loop.index0 }}">
                                     <button class="btn-gray" type="submit">Deactivate</button>
                                 </form>
                             {% else %}
                                 <form method="post" style="display:inline;">
                                     <input type="hidden" name="form_type" value="activate_recurring">
-                                    <input type="hidden" name="idx" value="{{ i }}">
+                                    <input type="hidden" name="idx" value="{{ loop.index0 }}">
                                     <button class="btn-green" type="submit">Activate</button>
                                 </form>
                             {% endif %}
                             <form method="post" style="display:inline;">
                                 <input type="hidden" name="form_type" value="delete_recurring">
-                                <input type="hidden" name="idx" value="{{ i }}">
+                                <input type="hidden" name="idx" value="{{ loop.index0 }}">
                                 <button class="btn-red" type="submit">Delete</button>
                             </form>
                         </span>
