@@ -2,133 +2,154 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ latest_forecast['projected'] | default('Family Budget Tracker') }}</title>
+    <title>{{ latest_forecast['projected'] if latest_forecast else 'Family Budget Tracker' }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
-            background: #f6f4ec;
             font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #f7f3e6, #d5c38e 100%);
             margin: 0;
             padding: 0;
         }
         .main-container {
-            max-width: 700px;
-            margin: 40px auto 40px auto;
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(164, 135, 38, 0.11), 0 1.5px 6px rgba(0,0,0,0.05);
-            padding: 28px 24px 32px 24px;
+            max-width: 520px;
+            margin: 40px auto;
+            padding: 0 6px;
+        }
+        .card, .chase-card, .forecast-header {
+            border-radius: 20px;
+            border: 3px solid;
+            border-image: linear-gradient(90deg, #c9b037 0%, #ffef9d 33%, #bfa034 66%, #fffbe8 100%) 1;
+            box-shadow: 0 4px 16px 0 rgba(185, 147, 36, 0.20), 0 8px 36px rgba(50, 45, 10, 0.09);
+            background: #fffdfa;
+            margin-bottom: 28px;
+            position: relative;
         }
         .forecast-header {
-            text-align: center;
-            font-size: 1.5rem;
+            background: linear-gradient(90deg, #f7e9bc 10%, #f3d173 44%, #e0b422 88%);
+            color: #604b11;
+            text-shadow: 0 2px 7px #fffad2, 0 1px 0 #eac843;
+            font-size: 2rem;
             font-weight: bold;
-            margin-bottom: 28px;
-            color: #a48726;
+            padding: 26px 32px;
+            text-align: center;
+            margin-bottom: 34px;
             letter-spacing: 1px;
+            border-radius: 20px;
         }
         .card {
-            background: #fcfaf4;
-            border-radius: 14px;
-            box-shadow: 0 2px 8px rgba(164, 135, 38, 0.07);
-            margin-bottom: 24px;
-            padding: 18px 20px 20px 20px;
+            padding: 32px 26px 20px 26px;
         }
-        h2.label-large {
-            margin: 0 0 14px 0;
-            font-size: 1.17rem;
-            font-weight: bold;
-            color: #7a660d;
-            letter-spacing: 0.5px;
-        }
-        .label-large {
-            font-size: 1.13rem;
-            font-weight: 600;
+        .chase-card {
+            padding: 24px 18px 16px 18px;
         }
         .checking-balances {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 34px;
         }
-        .checking-row {
+        .checking-row, .paycheck-add-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 7px;
+            gap: 18px;
+            margin-bottom: 0;
         }
-        .combined-balance {
-            margin: 12px 0 0 0;
-            font-weight: 600;
-            color: #36322a;
+        .chess-icon, .gold-icon {
+            width: 54px;
+            height: 54px;
+            display: block;
+            filter: drop-shadow(0px 7px 18px rgba(165, 135, 45, 0.19)) drop-shadow(0 2px 9px #fffbe8);
         }
-        .chess-icon {
-            width: 30px;
-            height: 30px;
+        .gold-icon {
+            width: 48px;
+            height: 48px;
+            margin-left: 2px;
+        }
+        .label-large {
+            font-size: 1.38rem;
+            font-weight: bold;
+            color: #a48726;
+            display: block;
+            margin-bottom: 0;
+            letter-spacing: 0.5px;
         }
         .input-block {
-            font-size: 1rem;
-            border: 1px solid #b9b193;
-            border-radius: 7px;
-            padding: 5px 7px;
-            width: 90px;
-            margin-left: 8px;
-            box-sizing: border-box;
+            background: linear-gradient(92deg, #f5edd7 0%, #efe7be 100%);
+            border: 2px solid #e7d394;
+            border-radius: 14px;
+            font-size: 1.38rem;
+            font-weight: bold;
+            color: #453c16;
+            padding: 18px 22px;
+            margin-left: auto;
+            box-shadow: 0 1px 7px #b9a55b45;
+            min-width: 110px;
         }
-        .update-btn, .btn-yellow, .btn-green, .btn-red, .btn-blue, .btn-gray {
-            font-weight: 600;
-            padding: 7px 16px;
-            border-radius: 6px;
-            border: none;
-            margin-top: 10px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background 0.14s;
-        }
-        .update-btn { background: #ece2c3; color: #a48726;}
-        .btn-yellow { background: #ffe79b; color: #7a660d;}
-        .btn-green { background: #bcebb1; color: #216a00;}
-        .btn-red { background: #ffe6e1; color: #c92f2f;}
-        .btn-blue { background: #e3eaff; color: #1441b7;}
-        .btn-gray { background: #e9e7e3; color: #474440;}
-        .summary-row {
+        .combined-balance {
             font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 24px;
             margin-bottom: 10px;
+            color: #2c2000;
         }
+        .update-btn {
+            background: linear-gradient(90deg, #fff7c7 8%, #e9be50 48%, #a88d32 100%);
+            color: #614b12;
+            border: none;
+            font-size: 1.18rem;
+            font-weight: bold;
+            padding: 14px 0;
+            border-radius: 15px;
+            box-shadow: 0 2px 7px #b89c3685;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .update-btn:hover {
+            background: linear-gradient(90deg, #ffe082 0%, #e9be50 80%);
+            box-shadow: 0 4px 24px #e9be5045;
+        }
+        .btn-blue, .btn-green, .btn-yellow, .btn-red, .btn-gray {
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-top: 6px;
+            margin-bottom: 2px;
+            padding: 10px 17px;
+        }
+        .btn-blue { background: linear-gradient(90deg, #b6d6ff, #6fb9ff); color: #26589d; }
+        .btn-green { background: linear-gradient(90deg, #ddf6e8 0%, #a0ea90 100%); color: #228b22; }
+        .btn-yellow { background: linear-gradient(90deg, #ffe66d, #ffd700); color: #9e7d16; }
+        .btn-red { background: linear-gradient(90deg, #ffb5b5, #ff2323); color: #871616; }
+        .btn-gray { background: #e5e5e5; color: #444; }
         .expense-item, .paycheck-item {
+            background: #f7f6f2;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #f2ecd6;
+            box-shadow: 0 1px 4px rgba(75,64,24,0.08);
         }
-        .expense-item:last-child, .paycheck-item:last-child {
-            border-bottom: none;
-        }
-        .expense-label, .paycheck-label {
-            font-size: 1rem;
-            flex: 1;
-        }
+        .expense-label, .paycheck-label { font-weight: bold; }
         .badge {
-            font-size: 0.93rem;
-            border-radius: 9px;
+            display: inline-block;
             padding: 2px 10px;
-            margin-left: 11px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-left: 8px;
         }
-        .badge-active { background: #eafad7; color: #216a00;}
-        .badge-inactive { background: #fff0ef; color: #e23c25;}
-        .gold-icon {
-            width: 33px;
-            height: 33px;
-            vertical-align: middle;
-            margin-right: 7px;
-        }
-        @media (max-width: 670px) {
-            .main-container {
-                margin: 12px;
-                padding: 8px 5px 20px 5px;
-            }
-            .card { padding: 10px 5px 14px 5px;}
+        .badge-active { background: #36d87a; color: #fff; }
+        .badge-inactive { background: #bbb; color: #fff; }
+        @media (max-width: 600px) {
+            .main-container { max-width: 100%; padding: 0; }
+            .forecast-header { font-size: 1.14rem; padding: 14px; }
+            .card, .chase-card { padding: 13px 4px 13px 7px; }
+            .checking-row, .paycheck-add-row { gap: 10px; }
+            .chess-icon, .gold-icon { width: 34px; height: 34px; }
+            .input-block { font-size: 1.1rem; padding: 9px 9px; min-width: 78px; }
         }
     </style>
     <script>
@@ -207,10 +228,10 @@
             <option value="checking">Checking</option>
             <option value="chase">Chase Card</option>
         </select>
-        <input name="day" placeholder="Day" type="number" min="1" max="31" required>
         <span id="charge_day_field" style="display:none;">
             <input name="chargeday" placeholder="Charge Day" type="number" min="1" max="31">
         </span>
+        <input name="day" placeholder="Day" type="number" min="1" max="31" required>
         <label>
             <input type="checkbox" name="active" checked> Active
         </label>
@@ -233,10 +254,10 @@
             <span style="margin-left: 18px;"><b>Total:</b> ${{ '%.2f'|format(chase_recurring_total) }}</span>
         </form>
         {% if recurring_chase_shown %}
-            {% set has_chase = false %}
+            {% set chase_index = -1 %}
             {% for item in recurring %}
                 {% if item.chasecard %}
-                    {% set has_chase = true %}
+                    {% set chase_index = chase_index + 1 %}
                     <div class="expense-item">
                         <span class="expense-label">
                             <b>{{ item.name }}</b>: ${{ '%.2f'|format(item.amount) }} on day {{ item.day }}
@@ -270,7 +291,7 @@
                     </div>
                 {% endif %}
             {% endfor %}
-            {% if not has_chase %}
+            {% if chase_index == -1 %}
                 <p style="color:#aaa;">No Chase Card recurring expenses.</p>
             {% endif %}
         {% endif %}
@@ -291,13 +312,13 @@
             <span style="margin-left: 18px;"><b>Total:</b> ${{ '%.2f'|format(nonchase_recurring_total) }}</span>
         </form>
         {% if recurring_other_shown %}
-            {% set has_other = false %}
+            {% set check_index = -1 %}
             {% for item in recurring %}
                 {% if not item.chasecard %}
-                    {% set has_other = true %}
+                    {% set check_index = check_index + 1 %}
                     <div class="expense-item">
                         <span class="expense-label">
-                            <b>{{ item.name }}</b>: ${{ '%.2f'|format(item.amount) }} from Checking on day {{ item.day }}
+                            <b>{{ item.name }}</b>: ${{ '%.2f'|format(item.amount) }} from {{ item.account }} on day {{ item.day }}
                             <span class="badge {% if item.active %}badge-active{% else %}badge-inactive{% endif %}">
                                 {% if item.active %}Active{% else %}Inactive{% endif %}
                             </span>
@@ -325,7 +346,7 @@
                     </div>
                 {% endif %}
             {% endfor %}
-            {% if not has_other %}
+            {% if check_index == -1 %}
                 <p style="color:#aaa;">No other recurring expenses.</p>
             {% endif %}
         {% endif %}
@@ -392,28 +413,20 @@
         {% endfor %}
     </div>
 
-    <!-- Forecast Card -->
+    <!-- Historic Forecasts Card - show 30 days, furthest date at top -->
     <form method="post" class="card">
-        <h2 class="label-large">Forecast Future Balance</h2>
-        <input name="forecast_date" type="date" required>
-        <input type="hidden" name="form_type" value="forecast">
-        <button class="btn-blue" type="submit">Run Forecast</button>
-    </form>
-
-    <!-- Historic Forecasts Card -->
-    <form method="post" class="card">
-        <h2 class="label-large">Historic Forecasts</h2>
+        <h2 class="label-large">Next 30 Days Forecast</h2>
         {% if forecasts %}
             <ul>
-                {% for f in forecasts %}
-                    <li><b>{{ f.date }}</b> | Incoming: ${{ '%.2f'|format(f.incoming) }} | Expenses: ${{ '%.2f'|format(f.expenses) }} | Projected: ${{ '%.2f'|format(f.projected) }}</li>
+                {% for f in forecasts|reverse %}
+                    <li>
+                        <b>{{ f.date }}</b> | Incoming: ${{ '%.2f'|format(f.incoming) }} | Expenses: ${{ '%.2f'|format(f.expenses) }} | Projected: ${{ '%.2f'|format(f.projected) }}
+                    </li>
                 {% endfor %}
             </ul>
         {% else %}
             <p>No forecasts yet.</p>
         {% endif %}
-        <input type="hidden" name="form_type" value="clear_forecast">
-        <button class="btn-red" type="submit">Clear Forecast History</button>
     </form>
 </div>
 </body>
