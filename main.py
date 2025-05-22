@@ -300,14 +300,34 @@ def index():
 
         # === RECURRING ===
         elif form_type == "add_expense":
+            name = request.form["name"].strip()
+            amount = float(request.form["amount"])
+            pay_from = request.form.get("pay_from")
+            day = int(request.form["day"])
+            active = "active" in request.form
+            chargeday = request.form.get("chargeday") or None
+            if chargeday in ("", None):
+                chargeday = None
+            else:
+                chargeday = int(chargeday)
+
+            # Determine account and chasecard fields
+            if pay_from == "chase":
+                account = "Chase"
+                chasecard = True
+            else:
+                # Default to Chris if no selector, but you can extend with dropdown logic if desired
+                account = "Chris"
+                chasecard = False
+
             new_exp = {
-                "name": request.form["name"],
-                "amount": float(request.form["amount"]),
-                "account": request.form.get("account") or None,
-                "day": int(request.form["day"]),
-                "active": "active" in request.form,
-                "chasecard": request.form.get("pay_from") == "chase",
-                "chargeday": int(request.form["chargeday"]) if request.form.get("pay_from") == "chase" and request.form.get("chargeday") else None,
+                "name": name,
+                "amount": amount,
+                "account": account,
+                "day": day,
+                "active": active,
+                "chasecard": chasecard,
+                "chargeday": chargeday,
             }
             data["recurring"].append(new_exp)
             save_recurring(data["recurring"])
