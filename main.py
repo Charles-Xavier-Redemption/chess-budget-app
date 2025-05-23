@@ -3,6 +3,7 @@ import os
 import psycopg2
 from datetime import datetime, date, time, timedelta
 import calendar
+import math
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
@@ -300,34 +301,14 @@ def index():
 
         # === RECURRING ===
         elif form_type == "add_expense":
-            name = request.form["name"].strip()
-            amount = float(request.form["amount"])
-            pay_from = request.form.get("pay_from")
-            day = int(request.form["day"])
-            active = "active" in request.form
-            chargeday = request.form.get("chargeday") or None
-            if chargeday in ("", None):
-                chargeday = None
-            else:
-                chargeday = int(chargeday)
-
-            # Determine account and chasecard fields
-            if pay_from == "chase":
-                account = "Chase"
-                chasecard = True
-            else:
-                # Default to Chris if no selector, but you can extend with dropdown logic if desired
-                account = "Chris"
-                chasecard = False
-
             new_exp = {
-                "name": name,
-                "amount": amount,
-                "account": account,
-                "day": day,
-                "active": active,
-                "chasecard": chasecard,
-                "chargeday": chargeday,
+                "name": request.form["name"],
+                "amount": float(request.form["amount"]),
+                "account": request.form.get("account") or None,
+                "day": int(request.form["day"]),
+                "active": "active" in request.form,
+                "chasecard": request.form.get("account") == "Chase",
+                "chargeday": int(request.form["chargeday"]) if request.form.get("account") == "Chase" and request.form.get("chargeday") else None,
             }
             data["recurring"].append(new_exp)
             save_recurring(data["recurring"])
@@ -439,6 +420,23 @@ def index():
     # For display: furthest forecast (30th day) at the top
     latest_forecast = forecasts[-1] if forecasts else None
 
+    # ========== LOWEST BALANCE & SAVINGS LOGIC ==========
+
+    safety_buffer = 100
+    lowest_balance = min([f["projected"] for f in forecasts]) if forecasts else 0
+
+    # Calculate can_move: only in multiples of $50, $0 if not safe
+    def round_down_amt(x):
+        return math.floor(x / 50) * 50
+
+    can_move = 0
+    if lowest_balance >= 1000:
+        can_move = round_down_amt(lowest_balance - safety_buffer)
+    elif lowest_balance >= safety_buffer:
+        can_move = round_down_amt(lowest_balance - safety_buffer)
+    else:
+        can_move = 0
+
     return render_template(
         "index.html",
         chris_balance=data["balances"].get("Chris", 0.0),
@@ -456,7 +454,10 @@ def index():
         chase_recurring_total=chase_recurring_total,
         nonchase_recurring_total=nonchase_recurring_total,
         recurring_chase_shown=session.get("recurring_chase_shown", False),
-        recurring_other_shown=session.get("recurring_other_shown", False)
+        recurring_other_shown=session.get("recurring_other_shown", False),
+        safety_buffer=safety_buffer,
+        lowest_balance=lowest_balance,
+        can_move=can_move
     )
 
 @app.route("/logout")
