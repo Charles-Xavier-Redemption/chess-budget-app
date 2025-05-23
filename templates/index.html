@@ -174,6 +174,52 @@
         {% endif %}
     </div>
 
+    <!-- LOWEST PROJECTED BALANCE & SAVINGS SUGGESTION -->
+    {% if lowest_balance is defined and safety_buffer is defined and can_move is defined %}
+        <div class="card" style="margin-top: -8px; margin-bottom: 30px; border-width: 4px;
+            {% if can_move > 0 %}
+                border-color: #37e269;
+                box-shadow: 0 4px 20px #b5ffb7aa;
+            {% elif lowest_balance < safety_buffer %}
+                border-color: #ff4343;
+                box-shadow: 0 4px 20px #ffd1d1aa;
+            {% else %}
+                border-color: #ffe066;
+                box-shadow: 0 4px 20px #fffcc5aa;
+            {% endif %}">
+            <div style="font-size:1.2rem; font-weight:600; margin-bottom:10px; color:#886400;">
+                Lowest projected combined balance in next 30 days:
+            </div>
+            <div style="font-size:2.1rem; font-weight:700; color:
+                {% if can_move > 0 %}#22b934
+                {% elif lowest_balance < safety_buffer %}#e00000
+                {% else %}#bfa800
+                {% endif %};
+                margin-bottom:16px;">
+                ${{ '%.2f'|format(lowest_balance) }}
+            </div>
+            <div style="font-size:1.08rem; color:#544900; margin-bottom:12px;">
+                Your safety buffer: <b>${{ '%.2f'|format(safety_buffer) }}</b>
+            </div>
+            <div style="font-size:1.18rem; font-weight:600; margin-bottom:6px;">
+                {% if lowest_balance >= 1000 %}
+                    <span style="color:#20b832;">You <b>must</b> move ${{ '%.0f'|format(can_move) }} into savings.</span>
+                {% elif can_move > 0 %}
+                    <span style="color:#20b832;">You can move ${{ '%.0f'|format(can_move) }} into savings.</span>
+                {% elif lowest_balance < safety_buffer %}
+                    <span style="color:#e00000;">Not safe to transfer to savings! Risk of overdraft.</span>
+                {% else %}
+                    <span style="color:#bfa800;">Borderline. No safe transfer above buffer.</span>
+                {% endif %}
+            </div>
+            <div style="font-size:0.93rem; color:#666;">
+                <span title="Lowest projected balance in next 30 days, minus your set safety buffer.">
+                    Why? The lowest balance in the next month is ${{ '%.2f'|format(lowest_balance) }}, so you can safely move ${{ '%.0f'|format(can_move) }}.
+                </span>
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Checking Balances Card -->
     <form method="post" class="card">
         <h2 class="label-large" style="color: #a48726;">Checking Balances</h2>
