@@ -461,7 +461,7 @@ can_move = round_down_amt(lowest_balance - safety_buffer) if lowest_balance > sa
 can_move_chris = round_down_amt(lowest_chris - safety_buffer) if lowest_chris > safety_buffer else 0
 can_move_angela = round_down_amt(lowest_angela - safety_buffer) if lowest_angela > safety_buffer else 0
 
-    return render_template(
+return render_template(
         "index.html",
         chris_balance=data["balances"].get("Chris", 0.0),
         angela_balance=data["balances"].get("Angela", 0.0),
