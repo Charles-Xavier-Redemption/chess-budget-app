@@ -448,11 +448,11 @@ def index():
     # ========== LOWEST BALANCE & SAVINGS LOGIC ==========
 
     safety_buffer = 100
-    lowest_balance = min([f["projected"] for f in forecasts]) if forecasts else 0
+    lowest_balance = min([f["projected"] for f in forecasts if f.get("projected") is not None]) if forecasts else 0
 
-    # NEW: Per-account lowest balances
-    lowest_chris = min([f.get("projected_chris", 0) for f in forecasts]) if forecasts else 0
-    lowest_angela = min([f.get("projected_angela", 0) for f in forecasts]) if forecasts else 0
+    # NEW: Per-account lowest balances (safe for None)
+    lowest_chris = min([f.get("projected_chris") for f in forecasts if f.get("projected_chris") is not None]) if forecasts else 0
+    lowest_angela = min([f.get("projected_angela") for f in forecasts if f.get("projected_angela") is not None]) if forecasts else 0
 
     def round_down_amt(x):
         return math.floor(x / 50) * 50
