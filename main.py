@@ -194,7 +194,7 @@ def get_next_occurrence(recurring_day, base_date):
             last_day = calendar.monthrange(year, month)[1]
             return datetime(year, month, last_day)
 
-# ====== FIXED FORECAST LOGIC: Rolling Chase Card Balance ======
+# ====== CHASE CARD CORRECT FORECAST LOGIC ======
 def run_rolling_forecast(data, num_days=30):
     forecasts = []
 
@@ -251,12 +251,12 @@ def run_rolling_forecast(data, num_days=30):
             day = int(r["day"])
             charge_day = int(r["chargeday"]) if r["chasecard"] and r.get("chargeday") else day
             if forecast_date.day == charge_day:
-                if r["account"] == "Chris":
+                if r["chasecard"]:
+                    running_chase_balance += r["amount"]  # Add to Chase rolling total (not checking)
+                elif r["account"] == "Chris":
                     running_chris -= r["amount"]
                 elif r["account"] == "Angela":
                     running_angela -= r["amount"]
-                elif r["chasecard"]:
-                    running_chase_balance += r["amount"]  # Add to Chase rolling total!
                 else:
                     running_chris -= r["amount"] * 0.5
                     running_angela -= r["amount"] * 0.5
