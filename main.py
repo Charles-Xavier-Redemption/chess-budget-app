@@ -199,6 +199,7 @@ def run_rolling_forecast(data, num_days=30):
 
     chris_balance = data["balances"].get("Chris", 0.0)
     angela_balance = data["balances"].get("Angela", 0.0)
+    chase_statement_balance = data["chase_balance"]
     today = datetime.today().date()
 
     paychecks = list(data["paychecks"])
@@ -208,10 +209,9 @@ def run_rolling_forecast(data, num_days=30):
     running_chris = chris_balance
     running_angela = angela_balance
 
-    chase_balance = data["chase_balance"]
-    chase_running = chase_balance  # This tracks the projected running Chase balance for the forecast
-
-    last_chase_payment_month = None  # Track the month of last Chase payment
+    # Track a running balance for new Chase card charges (after last statement)
+    running_chase_balance = chase_statement_balance
+    last_chase_payment_month = None
 
     for day_offset in range(num_days):
         forecast_date = today + timedelta(days=day_offset)
@@ -220,7 +220,7 @@ def run_rolling_forecast(data, num_days=30):
         incoming = 0.0
         onetime_exp = 0.0
 
-        # PAYCHECKS
+        # PAYCHECKS - credit only to the correct account
         for p in paychecks:
             if p["active"] and p["date"] == forecast_date_str:
                 if p.get("account") == "Chris":
@@ -244,7 +244,7 @@ def run_rolling_forecast(data, num_days=30):
                     running_angela -= o["amount"] * 0.5
                 onetime_exp += o["amount"]
 
-        # RECURRING EXPENSES (and accumulate projected Chase card usage)
+        # RECURRING EXPENSES
         for r in recurring:
             if not r["active"]:
                 continue
@@ -256,16 +256,15 @@ def run_rolling_forecast(data, num_days=30):
                 elif r["account"] == "Angela":
                     running_angela -= r["amount"]
                 elif r["chasecard"]:
-                    # Charge to Chase card, not directly to checking, and accumulate for statement payment
-                    chase_running += r["amount"]
+                    running_chase_balance += r["amount"]  # <-- Add charge to running Chase card balance!
                 else:
                     running_chris -= r["amount"] * 0.5
                     running_angela -= r["amount"] * 0.5
 
-        # SUBTRACT PROJECTED CHASE STATEMENT BALANCE (running total) ONCE PER MONTH ON 8TH
+        # SUBTRACT Chase running balance ONCE per month ON THE 8TH, and reset
         if forecast_date.day == 8 and last_chase_payment_month != forecast_date.month:
-            running_chris -= chase_running
-            chase_running = 0.0  # Reset for new statement cycle
+            running_chris -= running_chase_balance
+            running_chase_balance = 0.0  # RESET to zero for new month
             last_chase_payment_month = forecast_date.month
 
         combined = running_chris + running_angela
@@ -453,8 +452,6 @@ def index():
         forecasts = load_data()["forecasts"]
 
     latest_forecast = forecasts[-1] if forecasts else None
-
-    # ========== LOWEST BALANCE & SAVINGS LOGIC ==========
 
     safety_buffer = 100
     lowest_balance = min([f["projected"] for f in forecasts]) if forecasts else 0
