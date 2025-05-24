@@ -431,7 +431,12 @@
         <div class="paycheck-add-row" style="margin-bottom: 18px;">
             <img src="{{ url_for('static', filename='Gold.PNG') }}" class="gold-icon" alt="Gold coins icon">
             <input name="amount" placeholder="Amount" type="number" step="0.01" required class="input-block" style="margin-right:10px;">
-            <input name="date" type="date" required class="input-block">
+            <input name="date" type="date" required class="input-block" style="margin-right:10px;">
+            <select name="account" required class="input-block">
+                <option value="" disabled selected>Select Account</option>
+                <option value="Chris">Chris</option>
+                <option value="Angela">Angela</option>
+            </select>
         </div>
         <input type="hidden" name="form_type" value="add_paycheck">
         <button class="btn-blue" type="submit">Add Paycheck</button>
@@ -443,7 +448,11 @@
         {% for item in paychecks %}
             <div class="paycheck-item">
                 <span class="paycheck-label">
-                    <b>${{ '%.2f'|format(item.amount) }}</b> on {{ item.date }}
+                    <b>${{ '%.2f'|format(item.amount) }}</b> 
+                    {% if item.account %}
+                        (<b>{{ item.account }}</b>)
+                    {% endif %}
+                    on {{ item.date }}
                     <span class="badge {% if item.active %}badge-active{% else %}badge-inactive{% endif %}">
                         {% if item.active %}Active{% else %}Inactive{% endif %}
                     </span>
