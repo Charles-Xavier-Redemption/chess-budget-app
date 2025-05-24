@@ -454,7 +454,7 @@ def index():
 
     latest_forecast = forecasts[-1] if forecasts else None
 
-    safety_buffer = 100
+    safety_buffer = 500
     lowest_balance = min([f["projected"] for f in forecasts]) if forecasts else 0
 
     lowest_chris = min([f.get("projected_chris") for f in forecasts if f.get("projected_chris") is not None], default=0)
