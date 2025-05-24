@@ -454,8 +454,8 @@ def index():
 
     latest_forecast = forecasts[-1] if forecasts else None
 
+    # === Use only individual account buffers, sum for main "move to savings"
     safety_buffer = 500
-    lowest_balance = min([f["projected"] for f in forecasts]) if forecasts else 0
 
     lowest_chris = min([f.get("projected_chris") for f in forecasts if f.get("projected_chris") is not None], default=0)
     lowest_angela = min([f.get("projected_angela") for f in forecasts if f.get("projected_angela") is not None], default=0)
@@ -463,9 +463,11 @@ def index():
     def round_down_amt(x):
         return math.floor(x / 50) * 50
 
-    can_move = round_down_amt(lowest_balance - safety_buffer) if lowest_balance > safety_buffer else 0
     can_move_chris = round_down_amt(lowest_chris - safety_buffer) if lowest_chris > safety_buffer else 0
     can_move_angela = round_down_amt(lowest_angela - safety_buffer) if lowest_angela > safety_buffer else 0
+    can_move = can_move_chris + can_move_angela
+
+    lowest_balance = min([f["projected"] for f in forecasts]) if forecasts else 0
 
     return render_template(
         "index.html",
