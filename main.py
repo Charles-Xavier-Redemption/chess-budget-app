@@ -194,6 +194,7 @@ def get_next_occurrence(recurring_day, base_date):
             last_day = calendar.monthrange(year, month)[1]
             return datetime(year, month, last_day)
 
+# ====== FIXED FORECAST LOGIC: Rolling Chase Card Balance ======
 def run_rolling_forecast(data, num_days=30):
     forecasts = []
 
@@ -209,8 +210,7 @@ def run_rolling_forecast(data, num_days=30):
     running_chris = chris_balance
     running_angela = angela_balance
 
-    # Track a running balance for new Chase card charges (after last statement)
-    running_chase_balance = chase_statement_balance
+    running_chase_balance = chase_statement_balance  # Start with DB value as current statement
     last_chase_payment_month = None
 
     for day_offset in range(num_days):
@@ -256,15 +256,15 @@ def run_rolling_forecast(data, num_days=30):
                 elif r["account"] == "Angela":
                     running_angela -= r["amount"]
                 elif r["chasecard"]:
-                    running_chase_balance += r["amount"]  # <-- Add charge to running Chase card balance!
+                    running_chase_balance += r["amount"]  # Add to Chase rolling total!
                 else:
                     running_chris -= r["amount"] * 0.5
                     running_angela -= r["amount"] * 0.5
 
-        # SUBTRACT Chase running balance ONCE per month ON THE 8TH, and reset
+        # PAY OFF THE CHASE CARD ONCE ON THE 8TH OF EACH MONTH
         if forecast_date.day == 8 and last_chase_payment_month != forecast_date.month:
             running_chris -= running_chase_balance
-            running_chase_balance = 0.0  # RESET to zero for new month
+            running_chase_balance = 0.0
             last_chase_payment_month = forecast_date.month
 
         combined = running_chris + running_angela
@@ -277,6 +277,7 @@ def run_rolling_forecast(data, num_days=30):
             "projected_chris": running_chris,
             "projected_angela": running_angela
         })
+
     return forecasts
 
 @app.route("/", methods=["GET", "POST"])
