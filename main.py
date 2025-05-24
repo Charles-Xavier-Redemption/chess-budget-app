@@ -47,8 +47,16 @@ def load_data():
     chase_balance = float(row[0]) if row else 0.0
     chase_balance_date = row[1] if row else None
 
-    cur.execute("SELECT date, incoming, expenses, projected FROM forecasts ORDER BY date ASC")
-    forecasts = [{"date": str(row[0]), "incoming": float(row[1]), "expenses": float(row[2]), "projected": float(row[3])} for row in cur.fetchall()]
+    # --- UPDATE: Load split forecasts ---
+    cur.execute("SELECT date, incoming, expenses, projected, projected_chris, projected_angela FROM forecasts ORDER BY date ASC")
+    forecasts = [{
+        "date": str(row[0]),
+        "incoming": float(row[1]),
+        "expenses": float(row[2]),
+        "projected": float(row[3]),
+        "projected_chris": float(row[4]) if row[4] is not None else None,
+        "projected_angela": float(row[5]) if row[5] is not None else None,
+    } for row in cur.fetchall()]
 
     cur.close()
     conn.close()
@@ -123,8 +131,17 @@ def save_forecasts(forecasts):
     cur = conn.cursor()
     cur.execute("DELETE FROM forecasts")
     for f in forecasts:
-        cur.execute("INSERT INTO forecasts (date, incoming, expenses, projected) VALUES (%s, %s, %s, %s)",
-                    (f["date"], f["incoming"], f["expenses"], f["projected"]))
+        cur.execute(
+            "INSERT INTO forecasts (date, incoming, expenses, projected, projected_chris, projected_angela) VALUES (%s, %s, %s, %s, %s, %s)",
+            (
+                f["date"],
+                f["incoming"],
+                f["expenses"],
+                f["projected"],
+                f.get("projected_chris"),
+                f.get("projected_angela"),
+            )
+        )
     conn.commit()
     cur.close()
     conn.close()
@@ -179,67 +196,85 @@ def get_next_occurrence(recurring_day, base_date):
             return datetime(year, month, last_day)
 
 def run_rolling_forecast(data, num_days=30):
-    """Generate forecasts for the next num_days, including today."""
     forecasts = []
-    combined_balance = sum(data["balances"].values())
+
+    chris_balance = data["balances"].get("Chris", 0.0)
+    angela_balance = data["balances"].get("Angela", 0.0)
+    combined_balance = chris_balance + angela_balance
     chase_balance = data["chase_balance"]
     chase_balance_date = data["chase_balance_date"]
     today = datetime.today().date()
+
+    paychecks = list(data["paychecks"])
+    one_time = list(data["one_time"])
+    recurring = list(data["recurring"])
+
+    running_chris = chris_balance
+    running_angela = angela_balance
 
     for day_offset in range(num_days):
         forecast_date = today + timedelta(days=day_offset)
         forecast_date_str = forecast_date.strftime("%Y-%m-%d")
 
-        # Get all paychecks (active, on or before forecast_date)
-        incoming = sum(
-            p["amount"] for p in data["paychecks"]
-            if p["active"] and p["date"] <= forecast_date_str
-        )
-        onetime_exp = sum(
-            e["amount"] for e in data["one_time"]
-            if e["date"] <= forecast_date_str
-        )
-        recurring_exp = 0.0
-        chase_recurring_exp = 0.0
-        for exp in data["recurring"]:
-            if not exp["active"]:
-                continue
-            day = int(exp["day"])
-            amount = float(exp["amount"])
-            is_chase = exp.get("chasecard", False)
-            charge_day = int(exp.get("chargeday") or day)
-            next_date = get_next_occurrence(charge_day, datetime.combine(today, time.min))
-            # Only count recurring expenses that would have been charged by forecast_date
-            while next_date.date() <= forecast_date:
-                if is_chase:
-                    chase_recurring_exp += amount
-                else:
-                    recurring_exp += amount
-                year, month = next_date.year, next_date.month
-                if month == 12:
-                    year += 1
-                    month = 1
-                else:
-                    month += 1
-                try:
-                    next_date = datetime(year, month, charge_day)
-                except ValueError:
-                    last_day = calendar.monthrange(year, month)[1]
-                    next_date = datetime(year, month, last_day)
+        incoming = 0.0
+        onetime_exp = 0.0
 
-        projected = (combined_balance - recurring_exp - onetime_exp) + incoming - chase_recurring_exp - chase_balance
+        # PAYCHECKS (if you later expand to account-specific paychecks, adjust here)
+        for p in paychecks:
+            if p["active"] and p["date"] == forecast_date_str:
+                # For now, split half-half if no account is defined
+                running_chris += p["amount"] * 0.5
+                running_angela += p["amount"] * 0.5
+                incoming += p["amount"]
+
+        # ONE-TIME EXPENSES
+        for o in one_time:
+            if o["date"] == forecast_date_str:
+                if o["account"] == "Chris":
+                    running_chris -= o["amount"]
+                elif o["account"] == "Angela":
+                    running_angela -= o["amount"]
+                else:
+                    running_chris -= o["amount"] * 0.5
+                    running_angela -= o["amount"] * 0.5
+                onetime_exp += o["amount"]
+
+        # RECURRING EXPENSES
+        for r in recurring:
+            if not r["active"]:
+                continue
+            day = int(r["day"])
+            charge_day = int(r["chargeday"]) if r["chasecard"] and r.get("chargeday") else day
+            if forecast_date.day == charge_day:
+                if r["account"] == "Chris":
+                    running_chris -= r["amount"]
+                elif r["account"] == "Angela":
+                    running_angela -= r["amount"]
+                elif r["chasecard"]:
+                    running_chris -= r["amount"]
+                else:
+                    running_chris -= r["amount"] * 0.5
+                    running_angela -= r["amount"] * 0.5
+
+        # SUBTRACT CHASE BALANCE on 8th
+        if forecast_date.day == 8:
+            running_chris -= chase_balance
+
+        combined = running_chris + running_angela
+
         forecasts.append({
             "date": forecast_date_str,
             "incoming": incoming,
-            "expenses": recurring_exp + onetime_exp + chase_recurring_exp + chase_balance,
-            "projected": projected
+            "expenses": onetime_exp,  # (for now; expand as needed)
+            "projected": combined,
+            "projected_chris": running_chris,
+            "projected_angela": running_angela
         })
     return forecasts
 
 @app.route("/", methods=["GET", "POST"])
 @require_pin
 def index():
-    # === SESSION STATE: toggles ===
     if "recurring_chase_shown" not in session:
         session["recurring_chase_shown"] = False
     if "recurring_other_shown" not in session:
@@ -250,7 +285,6 @@ def index():
     chase_balance = data["chase_balance"]
     chase_balance_date = data["chase_balance_date"]
 
-    # ==== FIX: Always compare datetime to datetime ====
     if chase_balance_date and isinstance(chase_balance_date, date) and not isinstance(chase_balance_date, datetime):
         chase_balance_date = datetime.combine(chase_balance_date, time.min)
 
@@ -281,7 +315,6 @@ def index():
             session["recurring_other_shown"] = not session.get("recurring_other_shown", False)
             return redirect("/")
 
-        # === BALANCES ===
         if form_type == "update_balances":
             data["balances"]["Chris"] = float(request.form.get("chris_balance", 0))
             data["balances"]["Angela"] = float(request.form.get("angela_balance", 0))
@@ -290,7 +323,6 @@ def index():
             refresh_forecasts = True
             return redirect("/")
 
-        # === CHASE BALANCE ===
         elif form_type == "update_chase_balance":
             new_chase = float(request.form.get("chase_balance", 0))
             today_str = datetime.today().strftime("%Y-%m-%d")
@@ -299,7 +331,6 @@ def index():
             refresh_forecasts = True
             return redirect("/")
 
-        # === RECURRING ===
         elif form_type == "add_expense":
             new_exp = {
                 "name": request.form["name"],
@@ -343,7 +374,6 @@ def index():
                 refresh_forecasts = True
             return redirect("/")
 
-        # === ONETIME ===
         elif form_type == "add_onetime":
             new_exp = {
                 "name": request.form["name"],
@@ -357,7 +387,6 @@ def index():
             refresh_forecasts = True
             return redirect("/")
 
-        # === PAYCHECKS ===
         elif form_type == "add_paycheck":
             new_pay = {
                 "amount": float(request.form["amount"]),
@@ -397,27 +426,23 @@ def index():
                 refresh_forecasts = True
             return redirect("/")
 
-        # === CLEAR FORECASTS ===
         elif form_type == "clear_forecast":
             clear_forecasts()
             refresh_forecasts = True
             return redirect("/")
 
-        # === FORECAST LOGIC (same as before) ===
         elif form_type == "forecast":
             clear_forecasts()
             forecasts = run_rolling_forecast(data, 30)
             save_forecasts(forecasts)
             return redirect("/")
 
-    # --- If no forecasts, or if refresh is triggered, always generate new 30-day forecasts ---
     forecasts = load_data()["forecasts"]
     if not forecasts or refresh_forecasts:
         forecasts = run_rolling_forecast(data, 30)
         save_forecasts(forecasts)
         forecasts = load_data()["forecasts"]
 
-    # For display: furthest forecast (30th day) at the top
     latest_forecast = forecasts[-1] if forecasts else None
 
     # ========== LOWEST BALANCE & SAVINGS LOGIC ==========
@@ -425,17 +450,16 @@ def index():
     safety_buffer = 100
     lowest_balance = min([f["projected"] for f in forecasts]) if forecasts else 0
 
-    # Calculate can_move: only in multiples of $50, $0 if not safe
+    # NEW: Per-account lowest balances
+    lowest_chris = min([f.get("projected_chris", 0) for f in forecasts]) if forecasts else 0
+    lowest_angela = min([f.get("projected_angela", 0) for f in forecasts]) if forecasts else 0
+
     def round_down_amt(x):
         return math.floor(x / 50) * 50
 
-    can_move = 0
-    if lowest_balance >= 1000:
-        can_move = round_down_amt(lowest_balance - safety_buffer)
-    elif lowest_balance >= safety_buffer:
-        can_move = round_down_amt(lowest_balance - safety_buffer)
-    else:
-        can_move = 0
+    can_move = round_down_amt(lowest_balance - safety_buffer) if lowest_balance > safety_buffer else 0
+    can_move_chris = round_down_amt(lowest_chris - safety_buffer) if lowest_chris > safety_buffer else 0
+    can_move_angela = round_down_amt(lowest_angela - safety_buffer) if lowest_angela > safety_buffer else 0
 
     return render_template(
         "index.html",
@@ -457,7 +481,11 @@ def index():
         recurring_other_shown=session.get("recurring_other_shown", False),
         safety_buffer=safety_buffer,
         lowest_balance=lowest_balance,
-        can_move=can_move
+        can_move=can_move,
+        lowest_chris=lowest_chris,
+        lowest_angela=lowest_angela,
+        can_move_chris=can_move_chris,
+        can_move_angela=can_move_angela
     )
 
 @app.route("/logout")
