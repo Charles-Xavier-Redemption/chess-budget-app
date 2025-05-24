@@ -25,6 +25,10 @@
             margin-bottom: 28px;
             position: relative;
         }
+        .paychecks-bg {
+            background: url("{{ url_for('static', filename='Paychecks.PNG') }}") center/cover no-repeat;
+            background-blend-mode: lighten;
+        }
         .forecast-header {
             background: linear-gradient(90deg, #f7e9bc 10%, #f3d173 44%, #e0b422 88%);
             color: #604b11;
@@ -51,40 +55,26 @@
         .checking-row {
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 14px;
             margin-bottom: 0;
         }
-        .paycheck-add-row {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            margin-bottom: 18px;
-            justify-content: center;
-        }
-        .paycheck-icon {
-            width: 42px;
-            height: 42px;
+        .chess-icon {
+            width: 40px;
+            height: 40px;
             display: block;
+            filter: drop-shadow(0px 7px 18px rgba(165, 135, 45, 0.17)) drop-shadow(0 2px 9px #fffbe8);
             flex-shrink: 0;
-            filter: drop-shadow(0px 7px 18px rgba(165, 135, 45, 0.19)) drop-shadow(0 2px 9px #fffbe8);
-            margin-right: 10px;
-        }
-        .paycheck-fields {
-            flex: 1 1 0;
-            display: flex;
-            gap: 12px;
-        }
-        .paycheck-fields input,
-        .paycheck-fields select {
-            width: 100%;
         }
         .gold-icon {
-            width: 48px;
-            height: 48px;
-            margin-left: 2px;
+            width: 32px;
+            height: 32px;
+            display: block;
+            margin: 0 8px 0 0;
+            filter: drop-shadow(0px 7px 16px rgba(165, 135, 45, 0.18));
+            flex-shrink: 0;
         }
         .label-large {
-            font-size: 1.38rem;
+            font-size: 1.25rem;
             font-weight: bold;
             color: #a48726;
             display: block;
@@ -95,16 +85,16 @@
             background: linear-gradient(92deg, #f5edd7 0%, #efe7be 100%);
             border: 2px solid #e7d394;
             border-radius: 14px;
-            font-size: 1.38rem;
+            font-size: 1.14rem;
             font-weight: bold;
             color: #453c16;
-            padding: 18px 22px;
-            margin-left: auto;
+            padding: 13px 15px;
             box-shadow: 0 1px 7px #b9a55b45;
-            min-width: 110px;
+            min-width: 84px;
+            flex: 1 1 0;
         }
         .combined-balance {
-            font-size: 1.1rem;
+            font-size: 1.08rem;
             font-weight: bold;
             margin-top: 24px;
             margin-bottom: 10px;
@@ -114,7 +104,7 @@
             background: linear-gradient(90deg, #fff7c7 8%, #e9be50 48%, #a88d32 100%);
             color: #614b12;
             border: none;
-            font-size: 1.18rem;
+            font-size: 1.13rem;
             font-weight: bold;
             padding: 14px 0;
             border-radius: 15px;
@@ -161,17 +151,34 @@
         }
         .badge-active { background: #36d87a; color: #fff; }
         .badge-inactive { background: #bbb; color: #fff; }
-        .paychecks-bg {
-            background: url('{{ url_for("static", filename="Paychecks.PNG") }}') center center/cover no-repeat;
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            overflow: hidden;
+
+        /* ADD PAYCHECK FLEX STYLES */
+        .paycheck-flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            justify-content: center;
         }
-        .paychecks-overlay {
-            background: rgba(255, 255, 235, 0.93);
-            border-radius: 16px;
-            padding: 16px;
+        .paycheck-flex-row .gold-icon {
+            margin: 0 6px 0 0;
+        }
+        .paycheck-flex-row input, .paycheck-flex-row select {
+            min-width: 96px;
+            flex: 1 1 0;
+        }
+        .paycheck-flex-row select {
+            max-width: 155px;
+        }
+
+        /* Paychecks card background overlay */
+        .paychecks-bg {
+            background: url("{{ url_for('static', filename='Paychecks.PNG') }}") center/cover no-repeat;
+            background-blend-mode: lighten;
+            position: relative;
+        }
+        .paychecks-bg .card-content {
             position: relative;
             z-index: 1;
         }
@@ -179,10 +186,10 @@
             content: '';
             display: block;
             position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.72);
             z-index: 0;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,235,0.82);
-            border-radius: 16px;
+            border-radius: 20px;
         }
         ul.forecast-list {
             list-style: none;
@@ -199,16 +206,13 @@
             font-weight: 500;
             box-shadow: 0 1px 6px #e5d5a785;
         }
-        @media (max-width: 700px) {
+        @media (max-width: 600px) {
             .main-container { max-width: 100%; padding: 0; }
             .forecast-header { font-size: 1.14rem; padding: 14px; }
             .card, .chase-card { padding: 13px 4px 13px 7px; }
-            .checking-row, .paycheck-add-row { gap: 10px; }
-            .chess-icon, .gold-icon, .paycheck-icon { width: 34px; height: 34px; }
-            .input-block { font-size: 1.1rem; padding: 9px 9px; min-width: 78px; }
-            .paycheck-add-row { flex-direction: column; align-items: stretch; gap: 8px; }
-            .paycheck-fields { flex-direction: column; gap: 8px; }
-            .paycheck-icon { margin: 0 auto 8px auto; }
+            .checking-row, .paycheck-flex-row { gap: 7px; }
+            .chess-icon, .gold-icon { width: 28px; height: 28px; }
+            .input-block, .paycheck-flex-row input, .paycheck-flex-row select { font-size: 1.02rem; padding: 8px 7px; min-width: 54px; }
         }
     </style>
     <script>
@@ -479,17 +483,15 @@
     <!-- Add Paycheck Card with Gold Coins Icon -->
     <form method="post" class="card">
         <h2 class="label-large">Add Paycheck</h2>
-        <div class="paycheck-add-row">
-            <img src="{{ url_for('static', filename='Gold.PNG') }}" class="paycheck-icon" alt="Gold coins icon">
-            <div class="paycheck-fields">
-                <input name="amount" placeholder="Amount" type="number" step="0.01" required class="input-block">
-                <input name="date" type="date" required class="input-block">
-                <select name="account" required class="input-block">
-                    <option value="" disabled selected>Select Account</option>
-                    <option value="Chris">Chris</option>
-                    <option value="Angela">Angela</option>
-                </select>
-            </div>
+        <div class="paycheck-flex-row">
+            <img src="{{ url_for('static', filename='Gold.PNG') }}" class="gold-icon" alt="Gold coins icon">
+            <input name="amount" placeholder="Amount" type="number" step="0.01" required class="input-block">
+            <input name="date" type="date" required class="input-block">
+            <select name="account" required class="input-block">
+                <option value="" disabled selected>Select Account</option>
+                <option value="Chris">Chris</option>
+                <option value="Angela">Angela</option>
+            </select>
         </div>
         <input type="hidden" name="form_type" value="add_paycheck">
         <button class="btn-blue" type="submit">Add Paycheck</button>
@@ -497,7 +499,7 @@
 
     <!-- Paycheck List Card -->
     <div class="card paychecks-bg">
-        <div class="paychecks-overlay">
+        <div class="card-content">
             <h2 class="label-large">Paychecks</h2>
             {% for item in paychecks %}
                 <div class="paycheck-item">
