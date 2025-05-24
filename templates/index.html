@@ -203,9 +203,17 @@
             </div>
             <div style="font-size:1.18rem; font-weight:600; margin-bottom:6px;">
                 {% if lowest_balance >= 1000 %}
-                    <span style="color:#20b832;">You <b>must</b> move ${{ '%.0f'|format(can_move) }} into savings.</span>
+                    <span style="color:#20b832;">You <b>must</b> move ${{ '%.0f'|format(can_move) }} into savings
+                        <span style="font-size:1.08rem; color:#4e820e;">
+                            &nbsp;(<b>${{ '%.0f'|format(can_move_chris) }}</b> from Chris, <b>${{ '%.0f'|format(can_move_angela) }}</b> from Angela)
+                        </span>
+                    </span>
                 {% elif can_move > 0 %}
-                    <span style="color:#20b832;">You can move ${{ '%.0f'|format(can_move) }} into savings.</span>
+                    <span style="color:#20b832;">You can move ${{ '%.0f'|format(can_move) }} into savings
+                        <span style="font-size:1.08rem; color:#4e820e;">
+                            &nbsp;(<b>${{ '%.0f'|format(can_move_chris) }}</b> from Chris, <b>${{ '%.0f'|format(can_move_angela) }}</b> from Angela)
+                        </span>
+                    </span>
                 {% elif lowest_balance < safety_buffer %}
                     <span style="color:#e00000;">Not safe to transfer to savings! Risk of overdraft.</span>
                 {% else %}
@@ -214,7 +222,8 @@
             </div>
             <div style="font-size:0.93rem; color:#666;">
                 <span title="Lowest projected balance in next 30 days, minus your set safety buffer.">
-                    Why? The lowest balance in the next month is ${{ '%.2f'|format(lowest_balance) }}, so you can safely move ${{ '%.0f'|format(can_move) }}.
+                    Why? The lowest combined balance in the next month is ${{ '%.2f'|format(lowest_balance) }}, so you can safely move ${{ '%.0f'|format(can_move) }}.<br>
+                    Chris: lowest ${{ '%.2f'|format(lowest_chris) }}, Angela: lowest ${{ '%.2f'|format(lowest_angela) }}
                 </span>
             </div>
         </div>
@@ -471,6 +480,8 @@
                 {% for f in forecasts|reverse %}
                     <li>
                         <b>{{ f.date }}</b> | Incoming: ${{ '%.2f'|format(f.incoming) }} | Expenses: ${{ '%.2f'|format(f.expenses) }} | Projected: ${{ '%.2f'|format(f.projected) }}
+                        | Chris: ${{ '%.2f'|format(f.projected_chris) if f.projected_chris is defined and f.projected_chris is not none else '?' }}
+                        | Angela: ${{ '%.2f'|format(f.projected_angela) if f.projected_angela is defined and f.projected_angela is not none else '?' }}
                     </li>
                 {% endfor %}
             </ul>
