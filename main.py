@@ -39,15 +39,15 @@ def load_data():
     cur.execute("SELECT name, amount, account, date FROM onetime")
     one_time = [{"name": row[0], "amount": float(row[1]), "account": row[2], "date": str(row[3])} for row in cur.fetchall()]
 
-    cur.execute("SELECT amount, date, active FROM paychecks")
-    paychecks = [{"amount": float(row[0]), "date": str(row[1]), "active": row[2]} for row in cur.fetchall()]
+    # Paychecks: now includes account
+    cur.execute("SELECT amount, date, active, account FROM paychecks")
+    paychecks = [{"amount": float(row[0]), "date": str(row[1]), "active": row[2], "account": row[3]} for row in cur.fetchall()]
 
     cur.execute("SELECT amount, balance_as_of FROM chase_balance ORDER BY balance_as_of DESC LIMIT 1")
     row = cur.fetchone()
     chase_balance = float(row[0]) if row else 0.0
     chase_balance_date = row[1] if row else None
 
-    # --- UPDATE: Load split forecasts ---
     cur.execute("SELECT date, incoming, expenses, projected, projected_chris, projected_angela FROM forecasts ORDER BY date ASC")
     forecasts = [{
         "date": str(row[0]),
@@ -110,8 +110,8 @@ def save_paychecks(paychecks):
     cur = conn.cursor()
     cur.execute("DELETE FROM paychecks")
     for p in paychecks:
-        cur.execute("INSERT INTO paychecks (amount, date, active) VALUES (%s, %s, %s)",
-                    (p["amount"], p["date"], p["active"]))
+        cur.execute("INSERT INTO paychecks (amount, date, active, account) VALUES (%s, %s, %s, %s)",
+                    (p["amount"], p["date"], p["active"], p.get("account")))
     conn.commit()
     cur.close()
     conn.close()
@@ -202,7 +202,6 @@ def run_rolling_forecast(data, num_days=30):
     angela_balance = data["balances"].get("Angela", 0.0)
     combined_balance = chris_balance + angela_balance
     chase_balance = data["chase_balance"]
-    chase_balance_date = data["chase_balance_date"]
     today = datetime.today().date()
 
     paychecks = list(data["paychecks"])
@@ -219,12 +218,17 @@ def run_rolling_forecast(data, num_days=30):
         incoming = 0.0
         onetime_exp = 0.0
 
-        # PAYCHECKS (if you later expand to account-specific paychecks, adjust here)
+        # PAYCHECKS - credit only to the correct account
         for p in paychecks:
             if p["active"] and p["date"] == forecast_date_str:
-                # For now, split half-half if no account is defined
-                running_chris += p["amount"] * 0.5
-                running_angela += p["amount"] * 0.5
+                if p.get("account") == "Chris":
+                    running_chris += p["amount"]
+                elif p.get("account") == "Angela":
+                    running_angela += p["amount"]
+                else:
+                    # fallback: if no account, split evenly (backward compatibility)
+                    running_chris += p["amount"] * 0.5
+                    running_angela += p["amount"] * 0.5
                 incoming += p["amount"]
 
         # ONE-TIME EXPENSES
@@ -265,7 +269,7 @@ def run_rolling_forecast(data, num_days=30):
         forecasts.append({
             "date": forecast_date_str,
             "incoming": incoming,
-            "expenses": onetime_exp,  # (for now; expand as needed)
+            "expenses": onetime_exp,
             "projected": combined,
             "projected_chris": running_chris,
             "projected_angela": running_angela
@@ -391,7 +395,8 @@ def index():
             new_pay = {
                 "amount": float(request.form["amount"]),
                 "date": request.form["date"],
-                "active": True
+                "active": True,
+                "account": request.form["account"]
             }
             data["paychecks"].append(new_pay)
             save_paychecks(data["paychecks"])
