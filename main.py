@@ -199,7 +199,6 @@ def run_rolling_forecast(data, num_days=30):
 
     chris_balance = data["balances"].get("Chris", 0.0)
     angela_balance = data["balances"].get("Angela", 0.0)
-    chase_balance = data["chase_balance"]
     today = datetime.today().date()
 
     paychecks = list(data["paychecks"])
@@ -208,6 +207,9 @@ def run_rolling_forecast(data, num_days=30):
 
     running_chris = chris_balance
     running_angela = angela_balance
+
+    chase_balance = data["chase_balance"]
+    chase_running = chase_balance  # This tracks the projected running Chase balance for the forecast
 
     last_chase_payment_month = None  # Track the month of last Chase payment
 
@@ -218,7 +220,7 @@ def run_rolling_forecast(data, num_days=30):
         incoming = 0.0
         onetime_exp = 0.0
 
-        # PAYCHECKS - credit only to the correct account
+        # PAYCHECKS
         for p in paychecks:
             if p["active"] and p["date"] == forecast_date_str:
                 if p.get("account") == "Chris":
@@ -242,7 +244,7 @@ def run_rolling_forecast(data, num_days=30):
                     running_angela -= o["amount"] * 0.5
                 onetime_exp += o["amount"]
 
-        # RECURRING EXPENSES
+        # RECURRING EXPENSES (and accumulate projected Chase card usage)
         for r in recurring:
             if not r["active"]:
                 continue
@@ -254,14 +256,16 @@ def run_rolling_forecast(data, num_days=30):
                 elif r["account"] == "Angela":
                     running_angela -= r["amount"]
                 elif r["chasecard"]:
-                    running_chris -= r["amount"]
+                    # Charge to Chase card, not directly to checking, and accumulate for statement payment
+                    chase_running += r["amount"]
                 else:
                     running_chris -= r["amount"] * 0.5
                     running_angela -= r["amount"] * 0.5
 
-        # SUBTRACT CHASE STATEMENT BALANCE ONCE PER MONTH ON 8TH
+        # SUBTRACT PROJECTED CHASE STATEMENT BALANCE (running total) ONCE PER MONTH ON 8TH
         if forecast_date.day == 8 and last_chase_payment_month != forecast_date.month:
-            running_chris -= chase_balance
+            running_chris -= chase_running
+            chase_running = 0.0  # Reset for new statement cycle
             last_chase_payment_month = forecast_date.month
 
         combined = running_chris + running_angela
