@@ -61,11 +61,22 @@
             margin-bottom: 18px;
             justify-content: center;
         }
-        .chess-icon, .gold-icon {
-            width: 54px;
-            height: 54px;
+        .paycheck-icon {
+            width: 42px;
+            height: 42px;
             display: block;
+            flex-shrink: 0;
             filter: drop-shadow(0px 7px 18px rgba(165, 135, 45, 0.19)) drop-shadow(0 2px 9px #fffbe8);
+            margin-right: 10px;
+        }
+        .paycheck-fields {
+            flex: 1 1 0;
+            display: flex;
+            gap: 12px;
+        }
+        .paycheck-fields input,
+        .paycheck-fields select {
+            width: 100%;
         }
         .gold-icon {
             width: 48px;
@@ -150,6 +161,29 @@
         }
         .badge-active { background: #36d87a; color: #fff; }
         .badge-inactive { background: #bbb; color: #fff; }
+        .paychecks-bg {
+            background: url('{{ url_for("static", filename="Paychecks.PNG") }}') center center/cover no-repeat;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .paychecks-overlay {
+            background: rgba(255, 255, 235, 0.93);
+            border-radius: 16px;
+            padding: 16px;
+            position: relative;
+            z-index: 1;
+        }
+        .paychecks-bg::before {
+            content: '';
+            display: block;
+            position: absolute;
+            z-index: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,235,0.82);
+            border-radius: 16px;
+        }
         ul.forecast-list {
             list-style: none;
             padding: 0;
@@ -165,54 +199,16 @@
             font-weight: 500;
             box-shadow: 0 1px 6px #e5d5a785;
         }
-        /* --- Paychecks card background image --- */
-        .paychecks-card {
-            background-image: url('{{ url_for('static', filename='Paychecks.PNG') }}');
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .paychecks-card .overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 255, 255, 0.87);
-            border-radius: 20px;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .paychecks-content {
-            position: relative;
-            z-index: 1;
-        }
-        /* Responsive fix for Add Paycheck Card */
-        @media (max-width: 900px) {
-            .paycheck-add-row {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-                margin-bottom: 10px;
-            }
-            .paycheck-add-row .input-block,
-            .paycheck-add-row select,
-            .paycheck-add-row img {
-                margin: 0 auto;
-                width: 100%;
-                min-width: 0;
-                box-sizing: border-box;
-            }
-            .paycheck-add-row img.gold-icon {
-                margin-bottom: 8px;
-            }
-        }
-        @media (max-width: 600px) {
+        @media (max-width: 700px) {
             .main-container { max-width: 100%; padding: 0; }
             .forecast-header { font-size: 1.14rem; padding: 14px; }
             .card, .chase-card { padding: 13px 4px 13px 7px; }
-            .checking-row { gap: 10px; }
-            .paycheck-add-row { gap: 10px; }
-            .chess-icon, .gold-icon { width: 34px; height: 34px; }
+            .checking-row, .paycheck-add-row { gap: 10px; }
+            .chess-icon, .gold-icon, .paycheck-icon { width: 34px; height: 34px; }
             .input-block { font-size: 1.1rem; padding: 9px 9px; min-width: 78px; }
+            .paycheck-add-row { flex-direction: column; align-items: stretch; gap: 8px; }
+            .paycheck-fields { flex-direction: column; gap: 8px; }
+            .paycheck-icon { margin: 0 auto 8px auto; }
         }
     </style>
     <script>
@@ -484,23 +480,24 @@
     <form method="post" class="card">
         <h2 class="label-large">Add Paycheck</h2>
         <div class="paycheck-add-row">
-            <img src="{{ url_for('static', filename='Gold.PNG') }}" class="gold-icon" alt="Gold coins icon">
-            <input name="amount" placeholder="Amount" type="number" step="0.01" required class="input-block">
-            <input name="date" type="date" required class="input-block">
-            <select name="account" required class="input-block">
-                <option value="" disabled selected>Select Account</option>
-                <option value="Chris">Chris</option>
-                <option value="Angela">Angela</option>
-            </select>
+            <img src="{{ url_for('static', filename='Gold.PNG') }}" class="paycheck-icon" alt="Gold coins icon">
+            <div class="paycheck-fields">
+                <input name="amount" placeholder="Amount" type="number" step="0.01" required class="input-block">
+                <input name="date" type="date" required class="input-block">
+                <select name="account" required class="input-block">
+                    <option value="" disabled selected>Select Account</option>
+                    <option value="Chris">Chris</option>
+                    <option value="Angela">Angela</option>
+                </select>
+            </div>
         </div>
         <input type="hidden" name="form_type" value="add_paycheck">
         <button class="btn-blue" type="submit">Add Paycheck</button>
     </form>
 
-    <!-- Paycheck List Card with vault-of-gold background -->
-    <div class="card paychecks-card">
-        <div class="overlay"></div>
-        <div class="paychecks-content">
+    <!-- Paycheck List Card -->
+    <div class="card paychecks-bg">
+        <div class="paychecks-overlay">
             <h2 class="label-large">Paychecks</h2>
             {% for item in paychecks %}
                 <div class="paycheck-item">
