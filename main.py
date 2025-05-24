@@ -39,7 +39,6 @@ def load_data():
     cur.execute("SELECT name, amount, account, date FROM onetime")
     one_time = [{"name": row[0], "amount": float(row[1]), "account": row[2], "date": str(row[3])} for row in cur.fetchall()]
 
-    # Paychecks: now includes account
     cur.execute("SELECT amount, date, active, account FROM paychecks")
     paychecks = [{"amount": float(row[0]), "date": str(row[1]), "active": row[2], "account": row[3]} for row in cur.fetchall()]
 
@@ -200,7 +199,6 @@ def run_rolling_forecast(data, num_days=30):
 
     chris_balance = data["balances"].get("Chris", 0.0)
     angela_balance = data["balances"].get("Angela", 0.0)
-    combined_balance = chris_balance + angela_balance
     chase_balance = data["chase_balance"]
     today = datetime.today().date()
 
@@ -210,6 +208,8 @@ def run_rolling_forecast(data, num_days=30):
 
     running_chris = chris_balance
     running_angela = angela_balance
+
+    last_chase_payment_month = None  # Track the month of last Chase payment
 
     for day_offset in range(num_days):
         forecast_date = today + timedelta(days=day_offset)
@@ -226,7 +226,6 @@ def run_rolling_forecast(data, num_days=30):
                 elif p.get("account") == "Angela":
                     running_angela += p["amount"]
                 else:
-                    # fallback: if no account, split evenly (backward compatibility)
                     running_chris += p["amount"] * 0.5
                     running_angela += p["amount"] * 0.5
                 incoming += p["amount"]
@@ -260,9 +259,10 @@ def run_rolling_forecast(data, num_days=30):
                     running_chris -= r["amount"] * 0.5
                     running_angela -= r["amount"] * 0.5
 
-        # SUBTRACT CHASE BALANCE on 8th
-        if forecast_date.day == 8:
+        # SUBTRACT CHASE STATEMENT BALANCE ONCE PER MONTH ON 8TH
+        if forecast_date.day == 8 and last_chase_payment_month != forecast_date.month:
             running_chris -= chase_balance
+            last_chase_payment_month = forecast_date.month
 
         combined = running_chris + running_angela
 
@@ -455,7 +455,6 @@ def index():
     safety_buffer = 100
     lowest_balance = min([f["projected"] for f in forecasts]) if forecasts else 0
 
-    # Robust: Per-account lowest balances, with safe default=0
     lowest_chris = min([f.get("projected_chris") for f in forecasts if f.get("projected_chris") is not None], default=0)
     lowest_angela = min([f.get("projected_angela") for f in forecasts if f.get("projected_angela") is not None], default=0)
 
