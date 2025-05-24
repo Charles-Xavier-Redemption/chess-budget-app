@@ -54,6 +54,9 @@
             gap: 18px;
             margin-bottom: 0;
         }
+        .paycheck-add-row {
+            margin-bottom: 18px;
+        }
         .chess-icon, .gold-icon {
             width: 54px;
             height: 54px;
@@ -143,6 +146,21 @@
         }
         .badge-active { background: #36d87a; color: #fff; }
         .badge-inactive { background: #bbb; color: #fff; }
+        ul.forecast-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        ul.forecast-list li {
+            font-size: 1.1rem;
+            background: #fcf8ea;
+            margin-bottom: 7px;
+            border-radius: 8px;
+            padding: 10px 10px;
+            color: #393204;
+            font-weight: 500;
+            box-shadow: 0 1px 6px #e5d5a785;
+        }
         @media (max-width: 600px) {
             .main-container { max-width: 100%; padding: 0; }
             .forecast-header { font-size: 1.14rem; padding: 14px; }
@@ -267,14 +285,6 @@
             <input type="hidden" name="form_type" value="update_chase_balance">
             <button class="btn-yellow" type="submit" style="margin-bottom:0;">Update</button>
         </form>
-    </div>
-
-    <!-- MONTHLY INCOME & EXPENSE SUMMARY -->
-    <div class="card">
-        <div class="summary-row" style="margin-bottom: 12px; color:#a48726; font-weight:600;">
-            This Month's Income: ${{ '%.2f'|format(month_paycheck_total) }}<br>
-            This Month's Recurring Expenses: ${{ '%.2f'|format(month_recurring_total) }}
-        </div>
     </div>
 
     <!-- Add Recurring Expense Card -->
@@ -428,7 +438,7 @@
     <!-- Add Paycheck Card with Gold Coins Icon -->
     <form method="post" class="card">
         <h2 class="label-large">Add Paycheck</h2>
-        <div class="paycheck-add-row" style="margin-bottom: 18px;">
+        <div class="paycheck-add-row">
             <img src="{{ url_for('static', filename='Gold.PNG') }}" class="gold-icon" alt="Gold coins icon">
             <input name="amount" placeholder="Amount" type="number" step="0.01" required class="input-block" style="margin-right:10px;">
             <input name="date" type="date" required class="input-block" style="margin-right:10px;">
@@ -444,7 +454,7 @@
 
     <!-- Paycheck List Card -->
     <div class="card">
-        <h2 class="label-large">Paychecks (${{ '%.2f'|format(month_paycheck_total) }})</h2>
+        <h2 class="label-large">Paychecks</h2>
         {% for item in paychecks %}
             <div class="paycheck-item">
                 <span class="paycheck-label">
@@ -485,11 +495,12 @@
     <form method="post" class="card">
         <h2 class="label-large">Next 30 Days Forecast</h2>
         {% if forecasts %}
-            <ul>
+            <ul class="forecast-list">
                 {% for f in forecasts|reverse %}
                     <li>
-                        <b>{{ f.date }}</b> | Incoming: ${{ '%.2f'|format(f.incoming) }} | Expenses: ${{ '%.2f'|format(f.expenses) }} | Projected: ${{ '%.2f'|format(f.projected) }}
-                        | Chris: ${{ '%.2f'|format(f.projected_chris) if f.projected_chris is defined and f.projected_chris is not none else '?' }}
+                        <b>{{ f.date }}</b> | 
+                        Projected: <b>${{ '%.2f'|format(f.projected) }}</b> |
+                        Chris: ${{ '%.2f'|format(f.projected_chris) if f.projected_chris is defined and f.projected_chris is not none else '?' }}
                         | Angela: ${{ '%.2f'|format(f.projected_angela) if f.projected_angela is defined and f.projected_angela is not none else '?' }}
                     </li>
                 {% endfor %}
