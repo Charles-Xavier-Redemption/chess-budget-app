@@ -25,30 +25,48 @@
             margin-bottom: 28px;
             position: relative;
         }
+        /* Bolder, 3D gold background for paychecks */
         .paychecks-bg {
-            background: url("{{ url_for('static', filename='Paychecks.PNG') }}") center/cover no-repeat;
-            background-blend-mode: lighten;
+            background: 
+                url("{{ url_for('static', filename='Paychecks.PNG') }}") center/cover no-repeat, 
+                linear-gradient(135deg, #fdf5b4 0%, #ffe066 100%);
+            background-blend-mode: luminosity, lighten;
             position: relative;
-            box-shadow: 0 8px 36px 0 rgba(185, 147, 36, 0.25), 0 12px 48px #c9b03733, 0 1px 80px #fffbe833;
+            min-height: 280px;
+            box-shadow: 0 10px 60px 0 #d4b531dd, 0 20px 80px #ffe066bb, 0 1px 120px #fffbe8cc;
+            overflow: hidden;
         }
         .paychecks-bg .card-content {
             position: relative;
             z-index: 1;
-            background: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.38);
             border-radius: 20px;
-            box-shadow: 0 4px 20px #ffd70099, 0 1px 14px #bfa03477;
-            backdrop-filter: blur(3.5px) saturate(135%) brightness(1.05);
-            padding: 12px 18px 8px 18px;
+            box-shadow: 0 6px 32px #ffd70099, 0 2px 22px #bfa03488;
+            backdrop-filter: blur(3.5px) saturate(145%) brightness(1.09);
+            padding: 18px 16px 8px 16px;
         }
         .paychecks-bg::before {
             content: '';
             display: block;
             position: absolute;
             inset: 0;
-            background: linear-gradient(120deg, rgba(255,245,185,0.33) 0%, rgba(255,255,255,0.08) 74%);
+            background: linear-gradient(120deg, rgba(255,245,185,0.55) 0%, rgba(255,255,255,0.11) 80%);
             z-index: 0;
             border-radius: 20px;
-            box-shadow: 0 2px 12px #ffe06644;
+            box-shadow: 0 6px 32px #ffe06699;
+            pointer-events: none;
+        }
+        /* Larger, shinier gold icon for add paycheck */
+        .gold-icon-large {
+            width: 62px;
+            height: 62px;
+            margin-right: 13px;
+            margin-left: 0;
+            filter: drop-shadow(0px 10px 28px #b8a139bb) drop-shadow(0 2px 16px #fffbe8bb) brightness(1.12) contrast(1.15);
+            flex-shrink: 0;
+            background: radial-gradient(circle at 70% 25%, #fffce8 0%, #ffe066 58%, #e7be3e 100%);
+            border-radius: 40%;
+            border: 2.5px solid #ffe066aa;
         }
         .forecast-header {
             background: linear-gradient(90deg, #f7e9bc 10%, #f3d173 44%, #e0b422 88%);
@@ -180,8 +198,12 @@
             margin-bottom: 18px;
             justify-content: center;
         }
-        .paycheck-flex-row .gold-icon {
-            margin: 0 6px 0 0;
+        /* Make gold icon big in Add Paycheck card */
+        .paycheck-flex-row .gold-icon,
+        .paycheck-flex-row .gold-icon-large {
+            width: 62px;
+            height: 62px;
+            margin-right: 16px;
         }
         .paycheck-flex-row input, .paycheck-flex-row select {
             min-width: 96px;
@@ -216,7 +238,7 @@
             .forecast-header { font-size: 1.14rem; padding: 14px; }
             .card, .chase-card { padding: 13px 4px 13px 7px; }
             .checking-row, .paycheck-flex-row { gap: 7px; }
-            .chess-icon, .gold-icon { width: 28px; height: 28px; }
+            .chess-icon, .gold-icon, .gold-icon-large { width: 38px; height: 38px; }
             .input-block, .paycheck-flex-row input, .paycheck-flex-row select { font-size: 1.02rem; padding: 8px 7px; min-width: 54px; }
         }
     </style>
@@ -485,7 +507,7 @@
         <button class="btn-yellow" type="submit">Add</button>
     </form>
 
-    <!-- One-Time Expenses List Card with working delete -->
+    <!-- One-Time Expenses List Card -->
     <div class="card onetime-card">
         <h2 class="label-large">One-Time Expenses</h2>
         {% if one_time and one_time|length > 0 %}
@@ -509,11 +531,11 @@
         {% endif %}
     </div>
 
-    <!-- Add Paycheck Card with Gold Coins Icon -->
+    <!-- Add Paycheck Card with Larger Gold Coins Icon -->
     <form method="post" class="card">
         <h2 class="label-large">Add Paycheck</h2>
         <div class="paycheck-flex-row">
-            <img src="{{ url_for('static', filename='Gold.PNG') }}" class="gold-icon" alt="Gold coins icon">
+            <img src="{{ url_for('static', filename='Gold.PNG') }}" class="gold-icon-large" alt="Gold coins icon">
             <input name="amount" placeholder="Amount" type="number" step="0.01" required class="input-block">
             <input name="date" type="date" required class="input-block">
             <select name="account" required class="input-block">
