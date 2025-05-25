@@ -232,10 +232,10 @@ def run_rolling_forecast(data, num_days=30):
                     running_angela += p["amount"] * 0.5
                 incoming += p["amount"]
 
-        # ONE-TIME EXPENSES (DATE NORMALIZATION FIX APPLIED HERE)
+        # ONE-TIME EXPENSES (DATE NORMALIZATION FIX)
         for o in one_time:
             odate = o["date"]
-            # Ensure odate is string "YYYY-MM-DD"
+            # Normalize odate to string YYYY-MM-DD
             if isinstance(odate, datetime):
                 odate = odate.strftime("%Y-%m-%d")
             elif isinstance(odate, date):
@@ -401,6 +401,16 @@ def index():
             save_onetime(data["one_time"])
             clear_forecasts()
             refresh_forecasts = True
+            return redirect("/")
+
+        # === DELETE ONE-TIME EXPENSE (Fix implemented here)
+        elif form_type == "delete_onetime":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["one_time"]):
+                del data["one_time"][idx]
+                save_onetime(data["one_time"])
+                clear_forecasts()
+                refresh_forecasts = True
             return redirect("/")
 
         elif form_type == "add_paycheck":
