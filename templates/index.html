@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ latest_forecast['projected'] if latest_forecast else 'Family Budget Tracker' }}</title>
+<title>
+  {% if latest_forecast %}
+    Projected Balance: ${{ '%.2f'|format(latest_forecast['projected']) }}
+  {% else %}
+    Family Budget Tracker
+  {% endif %}
+</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
