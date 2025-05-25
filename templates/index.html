@@ -205,7 +205,6 @@
             font-weight: 500;
             box-shadow: 0 1px 6px #e5d5a785;
         }
-        /* One-Time Expenses Card style */
         .onetime-card {
             background: linear-gradient(108deg, #fffbe6a0 0%, #e5dbb89e 100%);
             box-shadow: 0 2px 12px #ffd70044;
@@ -486,7 +485,7 @@
         <button class="btn-yellow" type="submit">Add</button>
     </form>
 
-    <!-- One-Time Expenses List Card -->
+    <!-- One-Time Expenses List Card with working delete -->
     <div class="card onetime-card">
         <h2 class="label-large">One-Time Expenses</h2>
         {% if one_time and one_time|length > 0 %}
