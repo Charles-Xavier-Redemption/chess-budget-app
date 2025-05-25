@@ -395,6 +395,15 @@ def index():
             refresh_forecasts = True
             return redirect("/")
 
+        elif form_type == "delete_onetime":
+            idx = int(request.form["idx"])
+            if 0 <= idx < len(data["one_time"]):
+                del data["one_time"][idx]
+                save_onetime(data["one_time"])
+                clear_forecasts()
+                refresh_forecasts = True
+            return redirect("/")
+
         elif form_type == "add_paycheck":
             new_pay = {
                 "amount": float(request.form["amount"]),
