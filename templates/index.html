@@ -28,6 +28,27 @@
         .paychecks-bg {
             background: url("{{ url_for('static', filename='Paychecks.PNG') }}") center/cover no-repeat;
             background-blend-mode: lighten;
+            position: relative;
+            box-shadow: 0 8px 36px 0 rgba(185, 147, 36, 0.25), 0 12px 48px #c9b03733, 0 1px 80px #fffbe833;
+        }
+        .paychecks-bg .card-content {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.45);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px #ffd70099, 0 1px 14px #bfa03477;
+            backdrop-filter: blur(3.5px) saturate(135%) brightness(1.05);
+            padding: 12px 18px 8px 18px;
+        }
+        .paychecks-bg::before {
+            content: '';
+            display: block;
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255,245,185,0.33) 0%, rgba(255,255,255,0.08) 74%);
+            z-index: 0;
+            border-radius: 20px;
+            box-shadow: 0 2px 12px #ffe06644;
         }
         .forecast-header {
             background: linear-gradient(90deg, #f7e9bc 10%, #f3d173 44%, #e0b422 88%);
@@ -132,7 +153,7 @@
         .btn-red { background: linear-gradient(90deg, #ffb5b5, #ff2323); color: #871616; }
         .btn-gray { background: #e5e5e5; color: #444; }
         .expense-item, .paycheck-item {
-            background: #f7f6f2;
+            background: #f7f6f2cc;
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 10px;
@@ -151,8 +172,6 @@
         }
         .badge-active { background: #36d87a; color: #fff; }
         .badge-inactive { background: #bbb; color: #fff; }
-
-        /* ADD PAYCHECK FLEX STYLES */
         .paycheck-flex-row {
             display: flex;
             flex-wrap: wrap;
@@ -171,26 +190,6 @@
         .paycheck-flex-row select {
             max-width: 155px;
         }
-
-        /* Paychecks card background overlay */
-        .paychecks-bg {
-            background: url("{{ url_for('static', filename='Paychecks.PNG') }}") center/cover no-repeat;
-            background-blend-mode: lighten;
-            position: relative;
-        }
-        .paychecks-bg .card-content {
-            position: relative;
-            z-index: 1;
-        }
-        .paychecks-bg::before {
-            content: '';
-            display: block;
-            position: absolute;
-            inset: 0;
-            background: rgba(255, 255, 255, 0.72);
-            z-index: 0;
-            border-radius: 20px;
-        }
         ul.forecast-list {
             list-style: none;
             padding: 0;
@@ -205,6 +204,13 @@
             color: #393204;
             font-weight: 500;
             box-shadow: 0 1px 6px #e5d5a785;
+        }
+        /* One-Time Expenses Card style */
+        .onetime-card {
+            background: linear-gradient(108deg, #fffbe6a0 0%, #e5dbb89e 100%);
+            box-shadow: 0 2px 12px #ffd70044;
+            border-radius: 20px;
+            margin-bottom: 28px;
         }
         @media (max-width: 600px) {
             .main-container { max-width: 100%; padding: 0; }
@@ -479,6 +485,30 @@
         <input type="hidden" name="form_type" value="add_onetime">
         <button class="btn-yellow" type="submit">Add</button>
     </form>
+
+    <!-- One-Time Expenses List Card -->
+    <div class="card onetime-card">
+        <h2 class="label-large">One-Time Expenses</h2>
+        {% if one_time and one_time|length > 0 %}
+            {% for item in one_time %}
+                <div class="expense-item">
+                    <span class="expense-label">
+                        <b>{{ item.name }}</b>: ${{ '%.2f'|format(item.amount) }}
+                        ({{ item.account }}, {{ item.date }})
+                    </span>
+                    <span>
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="form_type" value="delete_onetime">
+                            <input type="hidden" name="idx" value="{{ loop.index0 }}">
+                            <button class="btn-red" type="submit">Delete</button>
+                        </form>
+                    </span>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="color:#aaa;">No one-time expenses added.</p>
+        {% endif %}
+    </div>
 
     <!-- Add Paycheck Card with Gold Coins Icon -->
     <form method="post" class="card">
