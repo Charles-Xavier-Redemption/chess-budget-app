@@ -232,9 +232,17 @@ def run_rolling_forecast(data, num_days=30):
                     running_angela += p["amount"] * 0.5
                 incoming += p["amount"]
 
-        # ONE-TIME EXPENSES
+        # ONE-TIME EXPENSES (DATE NORMALIZATION FIX APPLIED HERE)
         for o in one_time:
-            if o["date"] == forecast_date_str:
+            odate = o["date"]
+            # Ensure odate is string "YYYY-MM-DD"
+            if isinstance(odate, datetime):
+                odate = odate.strftime("%Y-%m-%d")
+            elif isinstance(odate, date):
+                odate = odate.strftime("%Y-%m-%d")
+            else:
+                odate = str(odate)[:10]
+            if odate == forecast_date_str:
                 if o["account"] == "Chris":
                     running_chris -= o["amount"]
                 elif o["account"] == "Angela":
@@ -393,15 +401,6 @@ def index():
             save_onetime(data["one_time"])
             clear_forecasts()
             refresh_forecasts = True
-            return redirect("/")
-
-        elif form_type == "delete_onetime":
-            idx = int(request.form["idx"])
-            if 0 <= idx < len(data["one_time"]):
-                del data["one_time"][idx]
-                save_onetime(data["one_time"])
-                clear_forecasts()
-                refresh_forecasts = True
             return redirect("/")
 
         elif form_type == "add_paycheck":
