@@ -14,9 +14,10 @@
         body {
             width: 100vw;
             height: 100vh;
-            background: url("{{ url_for('static', filename='login.PNG') }}") center center no-repeat;
+            background: url("{{ url_for('static', filename='login.PNG') }}") no-repeat center center fixed;
             background-size: cover;
             overflow: hidden;
+            /* Default mobile/portrait: image centered */
         }
         .login-form {
             display: flex;
@@ -50,7 +51,12 @@
             background: linear-gradient(90deg, #ffeabf 0%, #ffe066 100%);
             box-shadow: 0 6px 28px #ffe06666;
         }
+
+        /* === Mobile: Centered image and form near bottom === */
         @media (max-width: 800px) {
+            body {
+                background-position: center center;
+            }
             .login-form {
                 bottom: 12vh;
                 left: 0;
@@ -59,9 +65,15 @@
                 margin: 0 auto;
             }
         }
+
+        /* === Desktop/iPad: Shift background up so face is visible === */
         @media (min-width: 801px) {
+            body {
+                /* Adjust vertical percent as needed: try 25-35% for perfect face centering */
+                background-position: center 30%;
+            }
             .login-form {
-                top: 50%;
+                top: 65%;
                 left: 0;
                 right: 0;
                 transform: translateY(-50%);
