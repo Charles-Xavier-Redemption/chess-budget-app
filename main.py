@@ -169,12 +169,7 @@ def require_pin(view):
         if request.method == 'POST' and request.form.get('pin') == PIN_CODE:
             session['authenticated'] = True
             return redirect(request.url)
-        return '''
-            <form method="post">
-                <p>Enter 4-digit PIN: <input type="password" name="pin" maxlength="4" pattern="\\d{4}" autofocus /></p>
-                <input type="submit" value="Login" />
-            </form>
-        '''
+        return render_template("login.html")
     wrapped_view.__name__ = view.__name__
     return wrapped_view
 
@@ -355,7 +350,7 @@ def index():
                 "day": int(request.form["day"]),
                 "active": "active" in request.form,
                 "chasecard": request.form.get("account") == "Chase",
-                "chargeday": int(request.form["chargeday"]) if request.form.get("account") == "Chase" and request.form.get("chargeday") else None,
+                "chargeday": int(request.form.get("chargeday")) if request.form.get("account") == "Chase" and request.form.get("chargeday") else None,
             }
             data["recurring"].append(new_exp)
             save_recurring(data["recurring"])
