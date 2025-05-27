@@ -1,105 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Secure Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      min-height: 100vh;
-      width: 100vw;
-      background: url("{{ url_for('static', filename='login.PNG') }}") no-repeat top center;
-      background-size: cover;
-      background-position: top center;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .login-container {
-      margin-top: 17vh; /* Lower = moves box further down */
-      background: rgba(24,24,24,0.34);
-      border-radius: 22px;
-      box-shadow: 0 8px 32px 0 rgba(31,38,135,0.21);
-      backdrop-filter: blur(10px) saturate(130%);
-      -webkit-backdrop-filter: blur(10px) saturate(130%);
-      padding: 38px 28px 26px 28px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 290px;
-      max-width: 92vw;
-    }
-    .login-title {
-      font-size: 1.7rem;
-      color: #fff9ee;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      margin-bottom: 24px;
-      text-align: center;
-      text-shadow: 0 2px 10px #66431277;
-    }
-    .login-input {
-      width: 92%;
-      background: rgba(255,255,255,0.29);
-      border: none;
-      outline: none;
-      border-radius: 12px;
-      font-size: 1.09rem;
-      padding: 15px 12px;
-      margin-bottom: 18px;
-      color: #333;
-      font-weight: 500;
-      box-shadow: 0 2px 10px #fff8c011;
-    }
-    .login-input::placeholder {
-      color: #f5e7b7;
-      opacity: 1;
-      font-size: 1.04rem;
-    }
-    .login-btn {
-      width: 98%;
-      padding: 13px 0;
-      border: none;
-      border-radius: 13px;
-      font-size: 1.19rem;
-      font-weight: bold;
-      color: #4a390a;
-      background: linear-gradient(90deg, #fff7c1 2%, #ffe066 93%);
-      box-shadow: 0 3px 18px #e1b03243;
-      cursor: pointer;
-      transition: background 0.13s, box-shadow 0.13s;
-    }
-    .login-btn:active {
-      background: linear-gradient(90deg, #ffe066 15%, #fff7c1 100%);
-    }
-    @media (max-width: 600px) {
-      .login-container {
-        min-width: 0;
-        width: 96vw;
-        padding: 18vw 4vw 13vw 4vw;
-        margin-top: 18vh;
-      }
-      .login-title { font-size: 1.2rem; }
-      .login-input { font-size: 1.06rem; }
-      .login-btn { font-size: 1.01rem; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Secure Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+        body {
+            width: 100vw;
+            height: 100vh;
+            background: url("{{ url_for('static', filename='login.PNG') }}") center center no-repeat;
+            background-size: cover;
+            overflow: hidden;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100vw;
+            position: absolute;
+        }
+        .login-input, .login-btn {
+            font-size: 1.2rem;
+            border-radius: 8px;
+            outline: none;
+            border: 1.5px solid rgba(200,200,200,0.55);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+            margin-bottom: 16px;
+            padding: 13px 18px;
+            width: 92vw;
+            max-width: 370px;
+            background: rgba(255,255,255,0.19);
+            color: #252525;
+        }
+        .login-btn {
+            background: linear-gradient(90deg, #ffe082 0%, #e9be50 90%);
+            font-weight: bold;
+            border: none;
+            box-shadow: 0 3px 16px rgba(200,150,0,0.13);
+            cursor: pointer;
+            transition: background 0.16s, box-shadow 0.13s;
+        }
+        .login-btn:hover, .login-btn:focus {
+            background: linear-gradient(90deg, #ffeabf 0%, #ffe066 100%);
+            box-shadow: 0 6px 28px #ffe06666;
+        }
+        @media (max-width: 800px) {
+            .login-form {
+                bottom: 12vh;
+                left: 0;
+                right: 0;
+                top: auto;
+                margin: 0 auto;
+            }
+        }
+        @media (min-width: 801px) {
+            .login-form {
+                top: 50%;
+                left: 0;
+                right: 0;
+                transform: translateY(-50%);
+                margin: 0 auto;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="login-container">
-    <div class="login-title">Welcome</div>
-    <form method="post" autocomplete="off">
-      <input class="login-input" type="text" name="pin" maxlength="16" placeholder="Enter username" autofocus>
-      <button class="login-btn" type="submit">Submit</button>
+    <form class="login-form" method="post" autocomplete="off">
+        <input class="login-input" type="text" name="pin" placeholder="Enter username" autofocus>
+        <button class="login-btn" type="submit">Submit</button>
     </form>
-  </div>
 </body>
 </html>
