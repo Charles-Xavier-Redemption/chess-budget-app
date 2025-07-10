@@ -468,7 +468,7 @@ def index():
     latest_forecast = forecasts[-1] if forecasts else None
 
     # === Use only individual account buffers, sum for main "move to savings"
-    safety_buffer = 500
+    safety_buffer = 1000
 
     lowest_chris = min([f.get("projected_chris") for f in forecasts if f.get("projected_chris") is not None], default=0)
     lowest_angela = min([f.get("projected_angela") for f in forecasts if f.get("projected_angela") is not None], default=0)
